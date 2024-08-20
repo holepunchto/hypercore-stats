@@ -1,0 +1,25 @@
+{
+  "name": "hypercore-stats",
+  "version": "0.0.0",
+  "description": "Stats for Hypercores, with Prometheus support",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holepunchto/hypercore-stats.git"
+  },
+  "keywords": [
+    "hypercore",
+    "stats",
+    "metrics",
+    "prometheus"
+  ],
+  "author": "Holepunch",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/holepunchto/hypercore-stats/issues"
+  },
+  "homepage": "https://github.com/holepunchto/hypercore-stats#readme"
+}
