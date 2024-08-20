@@ -13,6 +13,9 @@ test('Can register and get prometheus metrics', async (t) => {
 
   const stats = new HypercoreStats()
   stats.registerPrometheusMetrics(promClient)
+  t.teardown(() => {
+    promClient.register.clear()
+  })
 
   stats.addCore(core)
   stats.addCore(core2)
@@ -50,6 +53,7 @@ test('Can register and get prometheus metrics', async (t) => {
   await new Promise(resolve => setTimeout(resolve, 100))
 
   {
+    stats.clearCache()
     const metrics = await promClient.register.metrics()
     const lines = metrics.split('\n')
 
@@ -70,3 +74,38 @@ function getMetricValue (lines, name) {
 
   return value
 }
+
+test('Cache-expiry logic', async (t) => {
+  const store = new Corestore(RAM)
+  const core = store.get({ name: 'core' })
+
+  const stats = new HypercoreStats({ cacheExpiryMs: 1000 })
+  stats.registerPrometheusMetrics(promClient)
+  t.teardown(() => {
+    promClient.register.clear()
+  })
+
+  {
+    const metrics = await promClient.register.metrics()
+
+    const lines = metrics.split('\n')
+    if (DEBUG) console.log(metrics)
+    t.is(getMetricValue(lines, 'hypercore_total_cores'), 0, 'init 0 (sanity check)')
+  }
+
+  stats.addCore(core)
+  {
+    const metrics = await promClient.register.metrics()
+
+    const lines = metrics.split('\n')
+    t.is(getMetricValue(lines, 'hypercore_total_cores'), 0, 'still cached 0 value')
+  }
+
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  {
+    const metrics = await promClient.register.metrics()
+
+    const lines = metrics.split('\n')
+    t.is(getMetricValue(lines, 'hypercore_total_cores'), 1, 'cache busted after expire time')
+  }
+})

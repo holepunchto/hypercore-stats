@@ -1,6 +1,22 @@
 class HypercoreStats {
-  constructor () {
+  constructor ({ cacheExpiryMs = 5000 } = {}) {
     this.cores = []
+    this.cacheExpiryMs = cacheExpiryMs
+
+    // DEVNOTE: We calculate the stats all at once to avoid iterating over
+    // all cores and their peers multiple times (once per metric)
+    // However, prometheus' scrape model does not support any state.
+    // So there is no explicit way to precalculate all stats for one scrape
+    // As a workaround, we cache the calculated stats for a short time
+    // (but a lot longer than a scrape action should take)
+    // That way a single scrape action should returns stats
+    // calculated from the same snapshot.
+    // The edge cases happen when:
+    // - 2 scrape requests arrive within less (or not much more) time than the cacheExpiry
+    // - The stats api is accessed programatically outside of prometheus scraping
+    // - scraping takes > cacheExpiry (but that should never be the case)
+    //  The edge cases aren't dramatic: it just means that different stats are taken 5s apart
+    this._cachedStats = null
   }
 
   addCore (core) {
@@ -8,49 +24,38 @@ class HypercoreStats {
   }
 
   get totalCores () {
-    return this.cores.length
+    return this._getStats().totalCores
   }
 
   getTotalLength () {
-    return this.cores.reduce(
-      (sum, core) => sum + core.length,
-      0
-    )
+    return this._getStats().totalLength
   }
 
   getTotalPeers () {
-    const uniquePeers = new Set()
-    for (const core of this.cores) {
-      for (const peer of core.peers) {
-        // rawStream shared means it's the same socket
-        // (easy way to count peers multiplexing over many cores only once)
-        uniquePeers.add(peer.stream.rawStream)
-      }
-    }
-
-    return uniquePeers.size
+    return this._getStats().totalPeers
   }
 
   getTotalInflightBlocks () {
-    return this.cores.reduce(
-      (sum, core) => {
-        return sum + core.peers.reduce(
-          (coreSum, peer) => coreSum + peer.inflight,
-          0
-        )
-      }, 0
-    )
+    return this._getStats().totalInflightBlocks
   }
 
   getTotalMaxInflightBlocks () {
-    return this.cores.reduce(
-      (sum, core) => {
-        return sum + core.peers.reduce(
-          (coreSum, peer) => coreSum + peer.getMaxInflight(),
-          0
-        )
-      }, 0
-    )
+    return this._getStats().totalMaxInflightBlocks
+  }
+
+  // Caches the result for this._lastStatsCalcTime ms
+  _getStats () {
+    if (this._cachedStats && this._lastStatsCalcTime + this.cacheExpiryMs > Date.now()) {
+      return this._cachedStats
+    }
+
+    this._cachedStats = new HypercoreStatsSnapshot(this.cores)
+    this._lastStatsCalcTime = Date.now()
+    return this._cachedStats
+  }
+
+  clearCache () {
+    this._cachedStats = null
   }
 
   registerPrometheusMetrics (promClient) {
@@ -94,6 +99,38 @@ class HypercoreStats {
         this.set(self.getTotalPeers())
       }
     })
+  }
+}
+
+class HypercoreStatsSnapshot {
+  constructor (cores) {
+    this.cores = cores
+
+    this._totalPeersConns = new Set()
+    this.totalCores = 0
+    this.totalLength = 0
+    this.totalInflightBlocks = 0
+    this.totalMaxInflightBlocks = 0
+
+    this.calculate()
+  }
+
+  get totalPeers () {
+    return this._totalPeersConns.size
+  }
+
+  calculate () {
+    this.totalCores = this.cores.length
+
+    for (const core of this.cores) {
+      this.totalLength += core.length
+
+      for (const peer of core.peers) {
+        this.totalInflightBlocks += peer.inflight
+        this._totalPeersConns.add(peer.stream.rawStream)
+        this.totalMaxInflightBlocks += peer.getMaxInflight()
+      }
+    }
   }
 }
 
