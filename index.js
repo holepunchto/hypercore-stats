@@ -59,6 +59,22 @@ class HypercoreStats {
     return this._getStats().totalBytesDownloaded
   }
 
+  get totalWireSyncReceived () {
+    return this._getStats().totalWireSyncReceived
+  }
+
+  get totalWireSyncTransmitted () {
+    return this._getStats().totalWireSyncTransmitted
+  }
+
+  get totalWireRangeReceived () {
+    return this._getStats().totalWireRangeReceived
+  }
+
+  get totalWireRangeTransmitted () {
+    return this._getStats().totalWireRangeTransmitted
+  }
+
   // Caches the result for this._lastStatsCalcTime ms
   _getStats () {
     if (this._cachedStats && this._lastStatsCalcTime + this.cacheExpiryMs > Date.now()) {
@@ -144,6 +160,35 @@ class HypercoreStats {
         this.set(self.getTotalBytesDownloaded())
       }
     })
+
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_wire_sync_received',
+      help: 'Total amount of wire-sync messages received across all cores',
+      collect () {
+        this.set(self.totalWireSyncReceived)
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_wire_sync_transmitted',
+      help: 'Total amount of wire-sync messages transmitted across all cores',
+      collect () {
+        this.set(self.totalWireSyncTransmitted)
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_wire_range_received',
+      help: 'Total amount of wire-range messages received across all cores',
+      collect () {
+        this.set(self.totalWireRangeReceived)
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_wire_range_transmitted',
+      help: 'Total amount of wire-range messages transmitted across all cores',
+      collect () {
+        this.set(self.totalWireRangeTransmitted)
+      }
+    })
   }
 }
 
@@ -152,6 +197,12 @@ class HypercoreStatsSnapshot {
     this.cores = cores
 
     this._totalPeersConns = new Set()
+    this._messageTypesOverview = new Map()
+    this._messageTypesOverview.set('wireSyncReceived', 0)
+    this._messageTypesOverview.set('wireSyncTransmitted', 0)
+    this._messageTypesOverview.set('wireRangeReceived', 0)
+    this._messageTypesOverview.set('wireRangeTransmitted', 0)
+
     this.totalCores = 0
     this.totalLength = 0
     this.totalInflightBlocks = 0
@@ -168,6 +219,22 @@ class HypercoreStatsSnapshot {
     return this._totalPeersConns.size
   }
 
+  get totalWireSyncReceived () {
+    return this._messageTypesOverview.get('wireSyncReceived')
+  }
+
+  get totalWireSyncTransmitted () {
+    return this._messageTypesOverview.get('wireSyncTransmitted')
+  }
+
+  get totalWireRangeReceived () {
+    return this._messageTypesOverview.get('wireRangeReceived')
+  }
+
+  get totalWireRangeTransmitted () {
+    return this._messageTypesOverview.get('wireRangeTransmitted')
+  }
+
   calculate () {
     this.totalCores = this.cores.length
 
@@ -177,6 +244,13 @@ class HypercoreStatsSnapshot {
       this.totalBlocksDownloaded += core.stats.blocksDownloaded
       this.totalBytesUploaded += core.stats.bytesUploaded
       this.totalBytesDownloaded += core.stats.bytesDownloaded
+
+      for (const [name, currentCount] of this._messageTypesOverview) {
+        const coreCount = core.replicator === null
+          ? 0
+          : core.replicator.stats[name]
+        this._messageTypesOverview.set(name, currentCount + coreCount)
+      }
 
       for (const peer of core.peers) {
         this.totalInflightBlocks += peer.inflight
