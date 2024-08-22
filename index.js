@@ -43,6 +43,22 @@ class HypercoreStats {
     return this._getStats().totalMaxInflightBlocks
   }
 
+  getTotalBlocksUploaded () {
+    return this._getStats().totalBlocksUploaded
+  }
+
+  getTotalBlocksDownloaded () {
+    return this._getStats().totalBlocksDownloaded
+  }
+
+  getTotalBytesUploaded () {
+    return this._getStats().totalBytesUploaded
+  }
+
+  getTotalBytesDownloaded () {
+    return this._getStats().totalBytesDownloaded
+  }
+
   // Caches the result for this._lastStatsCalcTime ms
   _getStats () {
     if (this._cachedStats && this._lastStatsCalcTime + this.cacheExpiryMs > Date.now()) {
@@ -99,6 +115,35 @@ class HypercoreStats {
         this.set(self.getTotalPeers())
       }
     })
+
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_blocks_uploaded',
+      help: 'Total amount of blocks uploaded across all cores',
+      collect () {
+        this.set(self.getTotalBlocksUploaded())
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_blocks_downloaded',
+      help: 'Total amount of blocks downloaded across all cores',
+      collect () {
+        this.set(self.getTotalBlocksDownloaded())
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_bytes_uploaded',
+      help: 'Total amount of bytes uploaded across all cores',
+      collect () {
+        this.set(self.getTotalBytesUploaded())
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_bytes_downloaded',
+      help: 'Total amount of bytes downloaded across all cores',
+      collect () {
+        this.set(self.getTotalBytesDownloaded())
+      }
+    })
   }
 }
 
@@ -111,6 +156,10 @@ class HypercoreStatsSnapshot {
     this.totalLength = 0
     this.totalInflightBlocks = 0
     this.totalMaxInflightBlocks = 0
+    this.totalBlocksUploaded = 0
+    this.totalBlocksDownloaded = 0
+    this.totalBytesUploaded = 0
+    this.totalBytesDownloaded = 0
 
     this.calculate()
   }
@@ -124,6 +173,10 @@ class HypercoreStatsSnapshot {
 
     for (const core of this.cores) {
       this.totalLength += core.length
+      this.totalBlocksUploaded += core.stats.blocksUploaded
+      this.totalBlocksDownloaded += core.stats.blocksDownloaded
+      this.totalBytesUploaded += core.stats.bytesUploaded
+      this.totalBytesDownloaded += core.stats.bytesDownloaded
 
       for (const peer of core.peers) {
         this.totalInflightBlocks += peer.inflight
