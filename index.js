@@ -132,6 +132,7 @@ class HypercoreStats {
       }
     })
 
+    /*
     new promClient.Gauge({ // eslint-disable-line no-new
       name: 'hypercore_total_blocks_uploaded',
       help: 'Total amount of blocks uploaded across all cores',
@@ -159,7 +160,7 @@ class HypercoreStats {
       collect () {
         this.set(self.getTotalBytesDownloaded())
       }
-    })
+    }) */
 
     new promClient.Gauge({ // eslint-disable-line no-new
       name: 'hypercore_total_wire_sync_received',
@@ -197,20 +198,20 @@ class HypercoreStatsSnapshot {
     this.cores = cores
 
     this._totalPeersConns = new Set()
-    this._messageTypesOverview = new Map()
-    this._messageTypesOverview.set('wireSyncReceived', 0)
-    this._messageTypesOverview.set('wireSyncTransmitted', 0)
-    this._messageTypesOverview.set('wireRangeReceived', 0)
-    this._messageTypesOverview.set('wireRangeTransmitted', 0)
+
+    this.totalWireSyncReceived = 0
+    this.totalWireSyncTransmitted = 0
+    this.totalWireRangeReceived = 0
+    this.totalWireRangeTransmitted = 0
 
     this.totalCores = 0
     this.totalLength = 0
     this.totalInflightBlocks = 0
     this.totalMaxInflightBlocks = 0
-    this.totalBlocksUploaded = 0
-    this.totalBlocksDownloaded = 0
-    this.totalBytesUploaded = 0
-    this.totalBytesDownloaded = 0
+    // this.totalBlocksUploaded = 0
+    // this.totalBlocksDownloaded = 0
+    // this.totalBytesUploaded = 0
+    // this.totalBytesDownloaded = 0
 
     this.calculate()
   }
@@ -219,37 +220,21 @@ class HypercoreStatsSnapshot {
     return this._totalPeersConns.size
   }
 
-  get totalWireSyncReceived () {
-    return this._messageTypesOverview.get('wireSyncReceived')
-  }
-
-  get totalWireSyncTransmitted () {
-    return this._messageTypesOverview.get('wireSyncTransmitted')
-  }
-
-  get totalWireRangeReceived () {
-    return this._messageTypesOverview.get('wireRangeReceived')
-  }
-
-  get totalWireRangeTransmitted () {
-    return this._messageTypesOverview.get('wireRangeTransmitted')
-  }
-
   calculate () {
     this.totalCores = this.cores.length
 
     for (const core of this.cores) {
       this.totalLength += core.length
-      this.totalBlocksUploaded += core.stats.blocksUploaded
-      this.totalBlocksDownloaded += core.stats.blocksDownloaded
-      this.totalBytesUploaded += core.stats.bytesUploaded
-      this.totalBytesDownloaded += core.stats.bytesDownloaded
+      // this.totalBlocksUploaded += core.stats.blocksUploaded
+      // this.totalBlocksDownloaded += core.stats.blocksDownloaded
+      // this.totalBytesUploaded += core.stats.bytesUploaded
+      // this.totalBytesDownloaded += core.stats.bytesDownloaded
 
-      for (const [name, currentCount] of this._messageTypesOverview) {
-        const coreCount = core.replicator === null
-          ? 0
-          : core.replicator.stats[name]
-        this._messageTypesOverview.set(name, currentCount + coreCount)
+      if (core.replicator) {
+        this.totalWireSyncReceived += core.replicator.stats.wireSync.rx
+        this.totalWireSyncTransmitted += core.replicator.stats.wireSync.tx
+        this.totalWireRangeReceived += core.replicator.stats.wireRange.rx
+        this.totalWireRangeTransmitted += core.replicator.stats.wireRange.tx
       }
 
       for (const peer of core.peers) {
