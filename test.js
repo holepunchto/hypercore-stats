@@ -10,6 +10,8 @@ test('Can register and get prometheus metrics', async (t) => {
   const store = new Corestore(RAM)
   const core = store.get({ name: 'core' })
   const core2 = store.get({ name: 'core2' })
+  await core.ready()
+  await core2.ready()
 
   const stats = new HypercoreStats()
   stats.registerPrometheusMetrics(promClient)
@@ -112,6 +114,7 @@ function getMetricValue (lines, name) {
 test('Cache-expiry logic', async (t) => {
   const store = new Corestore(RAM)
   const core = store.get({ name: 'core' })
+  await core.ready()
 
   const stats = new HypercoreStats({ cacheExpiryMs: 1000 })
   stats.registerPrometheusMetrics(promClient)

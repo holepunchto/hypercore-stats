@@ -1,6 +1,8 @@
+const b4a = require('b4a')
+
 class HypercoreStats {
   constructor ({ cacheExpiryMs = 5000 } = {}) {
-    this.cores = []
+    this.cores = new Map()
     this.cacheExpiryMs = cacheExpiryMs
 
     // DEVNOTE: We calculate the stats all at once to avoid iterating over
@@ -20,7 +22,15 @@ class HypercoreStats {
   }
 
   addCore (core) {
-    this.cores.push(core)
+    if (!core.key) {
+      throw new Error('Can only add a core after its key is set (await ready)')
+    }
+
+    // Note: if a core with that key was already added,
+    // it gets overwritten
+    // DEVNOTE: this assumes we do not add any state to the hypercores
+    // (so no event handlers)
+    this.cores.set(b4a.from(core.key, 'hex'), core)
   }
 
   get totalCores () {
@@ -129,7 +139,7 @@ class HypercoreStats {
       return this._cachedStats
     }
 
-    this._cachedStats = new HypercoreStatsSnapshot(this.cores)
+    this._cachedStats = new HypercoreStatsSnapshot([...this.cores.values()])
     this._lastStatsCalcTime = Date.now()
     return this._cachedStats
   }
