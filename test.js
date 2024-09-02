@@ -4,7 +4,7 @@ const RAM = require('random-access-memory')
 const HypercoreStats = require('.')
 const promClient = require('prom-client')
 
-const DEBUG = false
+const DEBUG = true
 
 test('Can register and get prometheus metrics', async (t) => {
   const store = new Corestore(RAM)
@@ -39,8 +39,20 @@ test('Can register and get prometheus metrics', async (t) => {
 
     t.is(getMetricValue(lines, 'hypercore_total_wire_sync_received'), 0, 'hypercore_total_wire_sync_received init 0')
     t.is(getMetricValue(lines, 'hypercore_total_wire_sync_transmitted'), 0, 'hypercore_total_wire_sync_transmitted init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_request_received'), 0, 'hypercore_total_wire_request_received init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_request_transmitted'), 0, 'hypercore_total_wire_request_transmitted init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_cancel_received'), 0, 'hypercore_total_wire_cancel_received init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_cancel_transmitted'), 0, 'hypercore_total_wire_cancel_transmitted init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_data_received'), 0, 'hypercore_total_wire_data_received init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_data_transmitted'), 0, 'hypercore_total_wire_data_transmitted init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_want_received'), 0, 'hypercore_total_wire_want_received init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_want_transmitted'), 0, 'hypercore_total_wire_want_transmitted init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_bitfield_received'), 0, 'hypercore_total_wire_bitfield_received init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_bitfield_transmitted'), 0, 'hypercore_total_wire_bitfield_transmitted init 0')
     t.is(getMetricValue(lines, 'hypercore_total_wire_range_received'), 0, 'hypercore_total_wire_range_received init 0')
     t.is(getMetricValue(lines, 'hypercore_total_wire_range_transmitted'), 0, 'hypercore_total_wire_range_transmitted init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_extension_received'), 0, 'hypercore_total_wire_extension_received init 0')
+    t.is(getMetricValue(lines, 'hypercore_total_wire_extension_transmitted'), 0, 'hypercore_total_wire_extension_transmitted init 0')
   }
 
   await core.append('block0')
@@ -80,6 +92,9 @@ test('Can register and get prometheus metrics', async (t) => {
     // t.ok(getMetricValue(lines, 'hypercore_total_bytes_uploaded') > 0, 'hypercore_total_bytes_uploaded')
     t.ok(getMetricValue(lines, 'hypercore_total_wire_sync_received') > 0, 'hypercore_total_wire_sync_received')
     t.ok(getMetricValue(lines, 'hypercore_total_wire_sync_transmitted') > 0, 'hypercore_total_wire_sync_transmitted')
+    t.ok(getMetricValue(lines, 'hypercore_total_wire_want_received') > 0, 'hypercore_total_wire_want_received')
+    t.ok(getMetricValue(lines, 'hypercore_total_wire_data_transmitted') > 0, 'hypercore_total_wire_data_transmitted')
+    t.ok(getMetricValue(lines, 'hypercore_total_wire_request_received') > 0, 'hypercore_total_wire_request_received')
     t.ok(getMetricValue(lines, 'hypercore_total_wire_range_transmitted') > 0, 'hypercore_total_wire_range_transmitted')
   }
 })
