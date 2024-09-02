@@ -43,21 +43,21 @@ class HypercoreStats {
     return this._getStats().totalMaxInflightBlocks
   }
 
-  getTotalBlocksUploaded () {
-    return this._getStats().totalBlocksUploaded
-  }
+  // getTotalBlocksUploaded () {
+  //   return this._getStats().totalBlocksUploaded
+  // }
 
-  getTotalBlocksDownloaded () {
-    return this._getStats().totalBlocksDownloaded
-  }
+  // getTotalBlocksDownloaded () {
+  //   return this._getStats().totalBlocksDownloaded
+  // }
 
-  getTotalBytesUploaded () {
-    return this._getStats().totalBytesUploaded
-  }
+  // getTotalBytesUploaded () {
+  //   return this._getStats().totalBytesUploaded
+  // }
 
-  getTotalBytesDownloaded () {
-    return this._getStats().totalBytesDownloaded
-  }
+  // getTotalBytesDownloaded () {
+  //   return this._getStats().totalBytesDownloaded
+  // }
 
   get totalWireSyncReceived () {
     return this._getStats().totalWireSyncReceived
