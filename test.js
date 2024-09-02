@@ -4,7 +4,7 @@ const RAM = require('random-access-memory')
 const HypercoreStats = require('.')
 const promClient = require('prom-client')
 
-const DEBUG = true
+const DEBUG = false
 
 test('Can register and get prometheus metrics', async (t) => {
   const store = new Corestore(RAM)
