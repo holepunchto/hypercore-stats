@@ -333,6 +333,30 @@ class HypercoreStats {
       }
     })
   }
+
+  static fromCorestore (store) {
+    const hypercoreStats = new this()
+    store.on('core-open', core => {
+      hypercoreStats.addCore(core)
+    })
+
+    // TODO: we never delete cores when they close
+    // since we care mostly about the history (sum) of metrics.
+    // A proper solution is to detect when a core closes,
+    // sum each metric to a separate variable,
+    // and then deleting the hypercore
+
+    // Add already-opened cores
+    for (const core of [...store.cores.values()]) {
+      // DEVNOTE: core-open is emitted after a core is ready
+      // so if not yet opened, we will process it then
+      if (core.opened === true) {
+        this.metrics.addCore(core)
+      }
+    }
+
+    return hypercoreStats
+  }
 }
 
 class HypercoreStatsSnapshot {

@@ -4,7 +4,7 @@ const RAM = require('random-access-memory')
 const HypercoreStats = require('.')
 const promClient = require('prom-client')
 
-const DEBUG = true
+const DEBUG = false
 
 test('Can register and get prometheus metrics', async (t) => {
   const store = new Corestore(RAM)
@@ -101,16 +101,6 @@ test('Can register and get prometheus metrics', async (t) => {
   }
 })
 
-function getMetricValue (lines, name) {
-  const match = lines.find((l) => l.startsWith(`${name} `))
-  if (!match) throw new Error(`No match for ${name}`)
-
-  const value = parseInt(match.split(' ')[1])
-  if (DEBUG) console.log(name, '->', value)
-
-  return value
-}
-
 test('Cache-expiry logic', async (t) => {
   const store = new Corestore(RAM)
   const core = store.get({ name: 'core' })
@@ -146,3 +136,26 @@ test('Cache-expiry logic', async (t) => {
     t.is(getMetricValue(lines, 'hypercore_total_cores'), 1, 'cache busted after expire time')
   }
 })
+
+test('fromCorestore init', async (t) => {
+  const store = new Corestore(RAM)
+  const core = store.get({ name: 'core' })
+
+  const stats = HypercoreStats.fromCorestore(store)
+  await core.ready()
+  t.is(stats.cores.size, 1, 'init core added')
+
+  const core2 = store.get({ name: 'core2' })
+  await core2.ready()
+  t.is(stats.cores.size, 2, 'new core added')
+})
+
+function getMetricValue (lines, name) {
+  const match = lines.find((l) => l.startsWith(`${name} `))
+  if (!match) throw new Error(`No match for ${name}`)
+
+  const value = parseInt(match.split(' ')[1])
+  if (DEBUG) console.log(name, '->', value)
+
+  return value
+}
