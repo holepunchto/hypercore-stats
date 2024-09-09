@@ -53,6 +53,10 @@ class HypercoreStats {
     return this._getStats().totalMaxInflightBlocks
   }
 
+  getAvgRoundTripTimeMs () {
+    return this._getStats().avgRoundTripTimeMs
+  }
+
   // getTotalBlocksUploaded () {
   //   return this._getStats().totalBlocksUploaded
   // }
@@ -190,6 +194,13 @@ class HypercoreStats {
       }
     })
 
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_round_trip_time_avg_seconds',
+      help: 'Average round-trip time (rtt) for the open replication streams',
+      collect () {
+        this.set(self.getAvgRoundTripTimeMs() / 1000)
+      }
+    })
     /*
     new promClient.Gauge({ // eslint-disable-line no-new
       name: 'hypercore_total_blocks_uploaded',
@@ -386,6 +397,7 @@ class HypercoreStatsSnapshot {
     this.totalLength = 0
     this.totalInflightBlocks = 0
     this.totalMaxInflightBlocks = 0
+    this._totalRoundTripTime = 0
     // this.totalBlocksUploaded = 0
     // this.totalBlocksDownloaded = 0
     // this.totalBytesUploaded = 0
@@ -396,6 +408,12 @@ class HypercoreStatsSnapshot {
 
   get totalPeers () {
     return this._totalPeersConns.size
+  }
+
+  get avgRoundTripTimeMs () {
+    return this.totalPeers === 0
+      ? 0
+      : this._totalRoundTripTime / this.totalPeers
   }
 
   calculate () {
@@ -428,9 +446,11 @@ class HypercoreStatsSnapshot {
       }
 
       for (const peer of core.peers) {
+        const udxStream = peer.stream.rawStream
         this.totalInflightBlocks += peer.inflight
-        this._totalPeersConns.add(peer.stream.rawStream)
+        this._totalPeersConns.add(udxStream)
         this.totalMaxInflightBlocks += peer.getMaxInflight()
+        this._totalRoundTripTime += udxStream.rtt
       }
     }
   }

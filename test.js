@@ -3,6 +3,8 @@ const Corestore = require('corestore')
 const RAM = require('random-access-memory')
 const HypercoreStats = require('.')
 const promClient = require('prom-client')
+const setupTestnet = require('hyperdht/testnet')
+const Hyperswarm = require('hyperswarm')
 
 const DEBUG = false
 
@@ -33,6 +35,7 @@ test('Can register and get prometheus metrics', async (t) => {
     t.is(getMetricValue(lines, 'hypercore_total_inflight_blocks'), 0, 'hypercore_total_inflight_blocks init 0')
     t.is(getMetricValue(lines, 'hypercore_total_max_inflight_blocks'), 0, 'hypercore_total_max_inflight_blocks init 0')
     t.is(getMetricValue(lines, 'hypercore_total_peers'), 0, 'hypercore_total_peers init 0')
+    t.is(getMetricValue(lines, 'hypercore_round_trip_time_avg_seconds'), 0, 'hypercore_round_trip_time_avg_seconds init 0')
 
     // t.is(getMetricValue(lines, 'hypercore_total_blocks_downloaded'), 0, 'hypercore_total_blocks_downloaded init 0')
     // t.is(getMetricValue(lines, 'hypercore_total_blocks_uploaded'), 0, 'hypercore_total_blocks_uploaded init 0')
@@ -65,10 +68,24 @@ test('Can register and get prometheus metrics', async (t) => {
   const readCore = store2.get({ key: core.key })
   await readCore.ready()
 
-  // Add error handlers if it turns out these can error
-  const s1 = core.replicate(true)
-  const s2 = readCore.replicate(false)
-  s1.pipe(s2).pipe(s1)
+  // Some stats come from udx, so we need UDX streams
+  // instead of directly replicating the hypercores.
+  // Easiest to just use hyperswarm for that.
+  const testnet = await setupTestnet()
+  const bootstrap = testnet.bootstrap
+  const swarm1 = new Hyperswarm({ bootstrap })
+  swarm1.on('connection', (conn) => {
+    store.replicate(conn)
+  })
+  const swarm2 = new Hyperswarm({ bootstrap })
+  swarm2.on('connection', (conn) => {
+    store2.replicate(conn)
+  })
+
+  swarm1.join(core.discoveryKey)
+  await swarm1.flush()
+  swarm2.join(core.discoveryKey)
+  await new Promise(resolve => setImmediate(resolve))
 
   await readCore.get(0)
   // DEVNOTE: The precise lifecycle of when a peer is added to
@@ -88,6 +105,7 @@ test('Can register and get prometheus metrics', async (t) => {
     // TODO: proper test of inflight metrics
     t.is(getMetricValue(lines, 'hypercore_total_length'), 3, 'hypercore_total_length')
     t.is(getMetricValue(lines, 'hypercore_total_peers'), 1, 'hypercore_total_peers')
+    t.is(getMetricValue(lines, 'hypercore_round_trip_time_avg_seconds') > 0, true, 'hypercore_round_trip_time_avg_seconds')
     // t.is(getMetricValue(lines, 'hypercore_total_blocks_downloaded'), 0, 'hypercore_total_blocks_downloaded')
     // t.is(getMetricValue(lines, 'hypercore_total_blocks_uploaded'), 1, 'hypercore_total_blocks_uploaded')
     // t.is(getMetricValue(lines, 'hypercore_total_bytes_downloaded'), 0, 'hypercore_total_bytes_downloaded')
@@ -99,6 +117,10 @@ test('Can register and get prometheus metrics', async (t) => {
     t.ok(getMetricValue(lines, 'hypercore_total_wire_request_received') > 0, 'hypercore_total_wire_request_received')
     t.ok(getMetricValue(lines, 'hypercore_total_wire_range_transmitted') > 0, 'hypercore_total_wire_range_transmitted')
   }
+
+  await swarm1.destroy()
+  await swarm2.destroy()
+  await testnet.destroy()
 })
 
 test('Cache-expiry logic', async (t) => {
@@ -116,7 +138,7 @@ test('Cache-expiry logic', async (t) => {
     const metrics = await promClient.register.metrics()
 
     const lines = metrics.split('\n')
-    if (DEBUG) console.log(metrics)
+    // if (DEBUG) console.log(metrics)
     t.is(getMetricValue(lines, 'hypercore_total_cores'), 0, 'init 0 (sanity check)')
   }
 
@@ -154,7 +176,7 @@ function getMetricValue (lines, name) {
   const match = lines.find((l) => l.startsWith(`${name} `))
   if (!match) throw new Error(`No match for ${name}`)
 
-  const value = parseInt(match.split(' ')[1])
+  const value = parseFloat(match.split(' ')[1])
   if (DEBUG) console.log(name, '->', value)
 
   return value

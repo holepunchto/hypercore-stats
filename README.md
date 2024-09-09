@@ -2,6 +2,8 @@
 
 Stats for Hypercores, with Prometheus support.
 
+Assumes the hypercores are replicated over UDX streams. This is the case for all normal use-cases of hypercores (like replicating across hyperdht/hyperswarm).
+
 ## Install
 
 ```
