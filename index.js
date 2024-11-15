@@ -375,6 +375,7 @@ class HypercoreStatsSnapshot {
     this.cores = cores
 
     this._totalPeersConns = new Set()
+    this._totalPeerCoreCombos = 0
 
     this.totalWireSyncReceived = 0
     this.totalWireSyncTransmitted = 0
@@ -411,9 +412,9 @@ class HypercoreStatsSnapshot {
   }
 
   get avgRoundTripTimeMs () {
-    return this.totalPeers === 0
+    return this._totalPeerCoreCombos === 0
       ? 0
-      : this._totalRoundTripTime / this.totalPeers
+      : this._totalRoundTripTime / this._totalPeerCoreCombos
   }
 
   calculate () {
@@ -446,6 +447,7 @@ class HypercoreStatsSnapshot {
       }
 
       for (const peer of core.peers) {
+        this._totalPeerCoreCombos++
         const udxStream = peer.stream.rawStream
         this.totalInflightBlocks += peer.inflight
         this._totalPeersConns.add(udxStream)
