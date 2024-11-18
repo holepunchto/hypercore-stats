@@ -37,6 +37,10 @@ class HypercoreStats {
     return this._getStats().totalCores
   }
 
+  get totalFullyDownloadedCores () {
+    return this._getStats().fullyDownloadedCores
+  }
+
   getTotalLength () {
     return this._getStats().totalLength
   }
@@ -164,6 +168,13 @@ class HypercoreStats {
       help: 'Total amount of hypercores',
       collect () {
         this.set(self.totalCores)
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_fully_downloaded_cores',
+      help: 'Total amount of fully downloaded hypercores (where its length equals its contiguous length)',
+      collect () {
+        this.set(self.totalFullyDownloadedCores)
       }
     })
 
@@ -384,6 +395,7 @@ class HypercoreStats {
 class HypercoreStatsSnapshot {
   constructor (cores) {
     this.cores = cores
+    this.fullyDownloadedCores = 0
 
     this._totalPeersConns = new Set()
     this._totalPeerCoreCombos = 0
@@ -434,6 +446,8 @@ class HypercoreStatsSnapshot {
 
     for (const core of this.cores) {
       this.totalLength += core.length
+      if (core.length === core.contiguousLength) this.fullyDownloadedCores++
+
       // this.totalBlocksUploaded += core.stats.blocksUploaded
       // this.totalBlocksDownloaded += core.stats.blocksDownloaded
       // this.totalBytesUploaded += core.stats.bytesUploaded
