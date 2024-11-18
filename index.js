@@ -182,7 +182,7 @@ class HypercoreStats {
       name: 'hypercore_total_max_inflight_blocks',
       help: 'Total amount of maxInflight blocks (summed across all cores)',
       collect () {
-        this.set(self.getTotalInflightBlocks())
+        this.set(self.getTotalMaxInflightBlocks())
       }
     })
 
