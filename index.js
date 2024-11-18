@@ -137,6 +137,10 @@ class HypercoreStats {
     return this._getStats().totalWireExtensionTransmitted
   }
 
+  get totalHotswaps () {
+    return this._getStats().totalHotswaps
+  }
+
   // Caches the result for this._lastStatsCalcTime ms
   _getStats () {
     if (this._cachedStats && this._lastStatsCalcTime + this.cacheExpiryMs > Date.now()) {
@@ -343,6 +347,13 @@ class HypercoreStats {
         this.set(self.totalWireExtensionTransmitted)
       }
     })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_hotswaps',
+      help: 'Total amount of hotswaps scheduled',
+      collect () {
+        this.set(self.totalHotswaps)
+      }
+    })
   }
 
   static fromCorestore (store) {
@@ -393,6 +404,7 @@ class HypercoreStatsSnapshot {
     this.totalWireRangeTransmitted = 0
     this.totalWireExtensionReceived = 0
     this.totalWireExtensionTransmitted = 0
+    this.totalHotswaps = 0
 
     this.totalCores = 0
     this.totalLength = 0
@@ -444,6 +456,7 @@ class HypercoreStatsSnapshot {
         this.totalWireRangeTransmitted += core.replicator.stats.wireRange.tx
         this.totalWireExtensionReceived += core.replicator.stats.wireExtension.rx
         this.totalWireExtensionTransmitted += core.replicator.stats.wireExtension.tx
+        this.totalHotswaps += core.replicator.stats.hotswaps
       }
 
       for (const peer of core.peers) {
