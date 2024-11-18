@@ -37,6 +37,10 @@ class HypercoreStats {
     return this._getStats().totalCores
   }
 
+  get totalFullyDownloadedCores () {
+    return this._getStats().fullyDownloadedCores
+  }
+
   getTotalLength () {
     return this._getStats().totalLength
   }
@@ -137,6 +141,10 @@ class HypercoreStats {
     return this._getStats().totalWireExtensionTransmitted
   }
 
+  get totalHotswaps () {
+    return this._getStats().totalHotswaps
+  }
+
   // Caches the result for this._lastStatsCalcTime ms
   _getStats () {
     if (this._cachedStats && this._lastStatsCalcTime + this.cacheExpiryMs > Date.now()) {
@@ -160,6 +168,13 @@ class HypercoreStats {
       help: 'Total amount of hypercores',
       collect () {
         this.set(self.totalCores)
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_fully_downloaded_cores',
+      help: 'Total amount of fully downloaded hypercores (where its length equals its contiguous length)',
+      collect () {
+        this.set(self.totalFullyDownloadedCores)
       }
     })
 
@@ -343,6 +358,13 @@ class HypercoreStats {
         this.set(self.totalWireExtensionTransmitted)
       }
     })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_total_hotswaps',
+      help: 'Total amount of hotswaps scheduled',
+      collect () {
+        this.set(self.totalHotswaps)
+      }
+    })
   }
 
   static fromCorestore (store) {
@@ -373,6 +395,7 @@ class HypercoreStats {
 class HypercoreStatsSnapshot {
   constructor (cores) {
     this.cores = cores
+    this.fullyDownloadedCores = 0
 
     this._totalPeersConns = new Set()
     this._totalPeerCoreCombos = 0
@@ -393,6 +416,7 @@ class HypercoreStatsSnapshot {
     this.totalWireRangeTransmitted = 0
     this.totalWireExtensionReceived = 0
     this.totalWireExtensionTransmitted = 0
+    this.totalHotswaps = 0
 
     this.totalCores = 0
     this.totalLength = 0
@@ -422,6 +446,8 @@ class HypercoreStatsSnapshot {
 
     for (const core of this.cores) {
       this.totalLength += core.length
+      if (core.length === core.contiguousLength) this.fullyDownloadedCores++
+
       // this.totalBlocksUploaded += core.stats.blocksUploaded
       // this.totalBlocksDownloaded += core.stats.blocksDownloaded
       // this.totalBytesUploaded += core.stats.bytesUploaded
@@ -444,6 +470,7 @@ class HypercoreStatsSnapshot {
         this.totalWireRangeTransmitted += core.replicator.stats.wireRange.tx
         this.totalWireExtensionReceived += core.replicator.stats.wireExtension.rx
         this.totalWireExtensionTransmitted += core.replicator.stats.wireExtension.tx
+        this.totalHotswaps += core.replicator.stats.hotswaps || 0
       }
 
       for (const peer of core.peers) {

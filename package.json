@@ -28,7 +28,7 @@
   "devDependencies": {
     "brittle": "^3.6.1",
     "corestore": "^6.18.4",
-    "hypercore": "^10.37.19",
+    "hypercore": "^10.38.0",
     "hyperdht": "^6.16.5",
     "hyperswarm": "^4.8.2",
     "prom-client": "^15.1.3",
