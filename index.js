@@ -470,7 +470,7 @@ class HypercoreStatsSnapshot {
         this.totalWireRangeTransmitted += core.replicator.stats.wireRange.tx
         this.totalWireExtensionReceived += core.replicator.stats.wireExtension.rx
         this.totalWireExtensionTransmitted += core.replicator.stats.wireExtension.tx
-        this.totalHotswaps += core.replicator.stats.hotswaps
+        this.totalHotswaps += core.replicator.stats.hotswaps || 0
       }
 
       for (const peer of core.peers) {
