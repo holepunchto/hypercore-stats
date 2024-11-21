@@ -4,6 +4,7 @@ class HypercoreStats {
   constructor ({ cacheExpiryMs = 5000 } = {}) {
     this.cores = new Map()
     this.cacheExpiryMs = cacheExpiryMs
+    this._someCore = null
 
     // DEVNOTE: We calculate the stats all at once to avoid iterating over
     // all cores and their peers multiple times (once per metric)
@@ -26,6 +27,8 @@ class HypercoreStats {
       throw new Error('Can only add a core after its key is set (await ready)')
     }
 
+    if (!this._someCore) this._someCore = core
+
     // Note: if a core with that key was already added,
     // it gets overwritten
     // DEVNOTE: this assumes we do not add any state to the hypercores
@@ -39,6 +42,13 @@ class HypercoreStats {
 
   get totalFullyDownloadedCores () {
     return this._getStats().fullyDownloadedCores
+  }
+
+  get totalGlobalCacheEntries () {
+    if (this._someCore?.globalCache) {
+      return this._someCore.globalCache.globalSize
+    }
+    return null
   }
 
   getTotalLength () {
@@ -363,6 +373,15 @@ class HypercoreStats {
       help: 'Total amount of hotswaps scheduled',
       collect () {
         this.set(self.totalHotswaps)
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_global_cache_entries_total',
+      help: 'Total amount of global cache entries',
+      collect () {
+        if (self.totalGlobalCacheEntries !== null) {
+          this.set(self.totalGlobalCacheEntries)
+        }
       }
     })
   }
