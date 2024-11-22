@@ -5,6 +5,7 @@ const HypercoreStats = require('.')
 const promClient = require('prom-client')
 const setupTestnet = require('hyperdht/testnet')
 const Hyperswarm = require('hyperswarm')
+const Rache = require('rache')
 
 const DEBUG = false
 
@@ -160,12 +161,13 @@ test('Cache-expiry logic', async (t) => {
 })
 
 test('fromCorestore init', async (t) => {
-  const store = new Corestore(RAM)
+  const store = new Corestore(RAM, { globalCache: new Rache() })
   const core = store.get({ name: 'core' })
 
   const stats = HypercoreStats.fromCorestore(store)
   await core.ready()
   t.is(stats.cores.size, 1, 'init core added')
+  t.is(stats.totalGlobalCacheEntries, 0, 'total cache entries available when globalCache set')
 
   const core2 = store.get({ name: 'core2' })
   await core2.ready()
