@@ -71,6 +71,10 @@ class HypercoreStats {
     return this._getStats().avgRoundTripTimeMs
   }
 
+  getTotalSessions () {
+    return this._getStats().totalSessions
+  }
+
   // getTotalBlocksUploaded () {
   //   return this._getStats().totalBlocksUploaded
   // }
@@ -226,6 +230,15 @@ class HypercoreStats {
         this.set(self.getAvgRoundTripTimeMs() / 1000)
       }
     })
+
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_sessions_total',
+      help: 'Total amount of hypercore sessions, across all cores',
+      collect () {
+        this.set(self.getTotalSessions())
+      }
+    })
+
     /*
     new promClient.Gauge({ // eslint-disable-line no-new
       name: 'hypercore_total_blocks_uploaded',
@@ -442,6 +455,7 @@ class HypercoreStatsSnapshot {
     this.totalInflightBlocks = 0
     this.totalMaxInflightBlocks = 0
     this._totalRoundTripTime = 0
+    this.totalSessions = 0
     // this.totalBlocksUploaded = 0
     // this.totalBlocksDownloaded = 0
     // this.totalBytesUploaded = 0
@@ -467,6 +481,7 @@ class HypercoreStatsSnapshot {
       this.totalLength += core.length
       if (core.length === core.contiguousLength) this.fullyDownloadedCores++
 
+      this.totalSessions += core.sessions.length
       // this.totalBlocksUploaded += core.stats.blocksUploaded
       // this.totalBlocksDownloaded += core.stats.blocksDownloaded
       // this.totalBytesUploaded += core.stats.bytesUploaded
