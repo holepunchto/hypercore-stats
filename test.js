@@ -176,7 +176,7 @@ test('fromCorestore init', async (t) => {
 })
 
 test('gc core if removed from corestore', async (t) => {
-  t.plan(4)
+  t.plan(5)
 
   const store = new Corestore(RAM)
   const store2 = new Corestore(RAM)
@@ -211,6 +211,7 @@ test('gc core if removed from corestore', async (t) => {
   t.is(stats.cores.size, 2, 'cores added')
   t.is(stats.persistedStats.totalWireRequestReceived, 0, 'nothing persisted yet (sanity check)')
   const wireReqRx = stats.totalWireRequestReceived
+  t.ok(wireReqRx > 0, 'We did receive wire reqs (sanity check')
 
   store.on('core-close', async () => {
     setImmediate(async () => { // to make sure the listener in the stats triggered
