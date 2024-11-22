@@ -175,6 +175,62 @@ test('fromCorestore init', async (t) => {
   t.is(stats.cores.size, 2, 'new core added')
 })
 
+test('gc core if removed from corestore', async (t) => {
+  t.plan(5)
+
+  const store = new Corestore(RAM)
+  const store2 = new Corestore(RAM)
+  const testnet = await setupTestnet()
+  const bootstrap = testnet.bootstrap
+  const swarm1 = new Hyperswarm({ bootstrap })
+  swarm1.on('connection', (conn) => {
+    store.replicate(conn)
+  })
+  const swarm2 = new Hyperswarm({ bootstrap })
+  swarm2.on('connection', (conn) => {
+    store2.replicate(conn)
+  })
+
+  const core1 = store.get({ name: 'core' })
+  const core2 = store.get({ name: 'core2' })
+  await core1.ready()
+  await core2.ready()
+
+  swarm1.join(core1.discoveryKey)
+  await swarm1.flush()
+
+  await core1.append('block0')
+  await core1.append('block1')
+
+  const readCore = store2.get({ key: core1.key })
+  await readCore.ready()
+  swarm2.join(readCore.discoveryKey)
+  await readCore.get(1)
+
+  const stats = HypercoreStats.fromCorestore(store)
+  t.is(stats.cores.size, 2, 'cores added')
+  t.is(stats.persistedStats.totalWireRequestReceived, 0, 'nothing persisted yet (sanity check)')
+  const wireReqRx = stats.totalWireRequestReceived
+  t.ok(wireReqRx > 0, 'We did receive wire reqs (sanity check')
+
+  store.on('core-close', async () => {
+    setImmediate(async () => { // to make sure the listener in the stats triggered
+      stats.bustCache()
+
+      t.is(stats.cores.size, 1, 'core got removed')
+      t.is(stats.totalWireRequestReceived, wireReqRx, 'uses persisted stats')
+
+      await swarm2.destroy()
+      await testnet.destroy()
+    })
+  })
+
+  await core1.close()
+
+  // We need to kill the replication session too
+  await swarm1.destroy()
+})
+
 function getMetricValue (lines, name) {
   const match = lines.find((l) => l.startsWith(`${name} `))
   if (!match) throw new Error(`No match for ${name}`)
