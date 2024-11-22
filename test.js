@@ -37,6 +37,7 @@ test('Can register and get prometheus metrics', async (t) => {
     t.is(getMetricValue(lines, 'hypercore_total_max_inflight_blocks'), 0, 'hypercore_total_max_inflight_blocks init 0')
     t.is(getMetricValue(lines, 'hypercore_total_peers'), 0, 'hypercore_total_peers init 0')
     t.is(getMetricValue(lines, 'hypercore_round_trip_time_avg_seconds'), 0, 'hypercore_round_trip_time_avg_seconds init 0')
+    t.ok(getMetricValue(lines, 'hypercore_sessions_total') > 0, 'hypercore_sessions_total')
 
     // t.is(getMetricValue(lines, 'hypercore_total_blocks_downloaded'), 0, 'hypercore_total_blocks_downloaded init 0')
     // t.is(getMetricValue(lines, 'hypercore_total_blocks_uploaded'), 0, 'hypercore_total_blocks_uploaded init 0')
