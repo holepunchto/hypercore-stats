@@ -4,7 +4,9 @@ class HypercoreStats {
   constructor ({ cacheExpiryMs = 5000 } = {}) {
     this.cores = new Map()
     this.cacheExpiryMs = cacheExpiryMs
-    this._someCore = null
+    this._globalCache = null
+
+    this.persistedStats = initPersistedStats()
 
     // DEVNOTE: We calculate the stats all at once to avoid iterating over
     // all cores and their peers multiple times (once per metric)
@@ -27,13 +29,32 @@ class HypercoreStats {
       throw new Error('Can only add a core after its key is set (await ready)')
     }
 
-    if (!this._someCore) this._someCore = core
+    if (!this._globalCache && core.globalCache) {
+      this._globalCache = core.globalCache
+    }
 
     // Note: if a core with that key was already added,
     // it gets overwritten
     // DEVNOTE: this assumes we do not add any state to the hypercores
     // (so no event handlers)
-    this.cores.set(b4a.from(core.key, 'hex'), core)
+    this.cores.set(b4a.toString(core.key, 'hex'), core)
+  }
+
+  gcCore (core) {
+    if (!core.key) return // TODO: figure out if this is even possible
+
+    const id = b4a.toString(core.key, 'hex')
+    const entry = this.cores.get(id)
+    if (!entry) return
+
+    this.cores.delete(id)
+
+    // Persist those stats we sum across all cores
+    processPersistedStats(this.persistedStats, core)
+  }
+
+  bustCache () {
+    this._cachedStats = null
   }
 
   get totalCores () {
@@ -45,8 +66,8 @@ class HypercoreStats {
   }
 
   get totalGlobalCacheEntries () {
-    if (this._someCore?.globalCache) {
-      return this._someCore.globalCache.globalSize
+    if (this._globalCache) {
+      return this._globalCache.globalSize
     }
     return null
   }
@@ -165,7 +186,7 @@ class HypercoreStats {
       return this._cachedStats
     }
 
-    this._cachedStats = new HypercoreStatsSnapshot([...this.cores.values()])
+    this._cachedStats = new HypercoreStatsSnapshot([...this.cores.values()], { ...this.persistedStats })
     this._lastStatsCalcTime = Date.now()
     return this._cachedStats
   }
@@ -404,19 +425,17 @@ class HypercoreStats {
     store.on('core-open', core => {
       hypercoreStats.addCore(core)
     })
-
-    // TODO: we never delete cores when they close
-    // since we care mostly about the history (sum) of metrics.
-    // A proper solution is to detect when a core closes,
-    // sum each metric to a separate variable,
-    // and then deleting the hypercore
+    store.on('core-close', core => {
+      if (store.closing) return
+      hypercoreStats.gcCore(core)
+    })
 
     // Add already-opened cores
     for (const core of [...store.cores.values()]) {
       // DEVNOTE: core-open is emitted after a core is ready
       // so if not yet opened, we will process it then
       if (core.opened === true) {
-        this.metrics.addCore(core)
+        hypercoreStats.addCore(core)
       }
     }
 
@@ -425,30 +444,30 @@ class HypercoreStats {
 }
 
 class HypercoreStatsSnapshot {
-  constructor (cores) {
+  constructor (cores, persistedStats) {
     this.cores = cores
     this.fullyDownloadedCores = 0
 
     this._totalPeersConns = new Set()
     this._totalPeerCoreCombos = 0
 
-    this.totalWireSyncReceived = 0
-    this.totalWireSyncTransmitted = 0
-    this.totalWireRequestReceived = 0
-    this.totalWireRequestTransmitted = 0
-    this.totalWireCancelReceived = 0
-    this.totalWireCancelTransmitted = 0
-    this.totalWireDataReceived = 0
-    this.totalWireDataTransmitted = 0
-    this.totalWireWantReceived = 0
-    this.totalWireWantTransmitted = 0
-    this.totalWireBitfieldReceived = 0
-    this.totalWireBitfieldTransmitted = 0
-    this.totalWireRangeReceived = 0
-    this.totalWireRangeTransmitted = 0
-    this.totalWireExtensionReceived = 0
-    this.totalWireExtensionTransmitted = 0
-    this.totalHotswaps = 0
+    this.totalWireSyncReceived = persistedStats.totalWireSyncReceived
+    this.totalWireSyncTransmitted = persistedStats.totalWireSyncTransmitted
+    this.totalWireRequestReceived = persistedStats.totalWireRequestReceived
+    this.totalWireRequestTransmitted = persistedStats.totalWireRequestTransmitted
+    this.totalWireCancelReceived = persistedStats.totalWireCancelReceived
+    this.totalWireCancelTransmitted = persistedStats.totalWireCancelTransmitted
+    this.totalWireDataReceived = persistedStats.totalWireDataReceived
+    this.totalWireDataTransmitted = persistedStats.totalWireDataTransmitted
+    this.totalWireWantReceived = persistedStats.totalWireWantReceived
+    this.totalWireWantTransmitted = persistedStats.totalWireWantTransmitted
+    this.totalWireBitfieldReceived = persistedStats.totalWireBitfieldReceived
+    this.totalWireBitfieldTransmitted = persistedStats.totalWireBitfieldTransmitted
+    this.totalWireRangeReceived = persistedStats.totalWireRangeReceived
+    this.totalWireRangeTransmitted = persistedStats.totalWireRangeTransmitted
+    this.totalWireExtensionReceived = persistedStats.totalWireExtensionReceived
+    this.totalWireExtensionTransmitted = persistedStats.totalWireExtensionTransmitted
+    this.totalHotswaps = persistedStats.totalHotswaps
 
     this.totalCores = 0
     this.totalLength = 0
@@ -487,25 +506,7 @@ class HypercoreStatsSnapshot {
       // this.totalBytesUploaded += core.stats.bytesUploaded
       // this.totalBytesDownloaded += core.stats.bytesDownloaded
 
-      if (core.replicator) {
-        this.totalWireSyncReceived += core.replicator.stats.wireSync.rx
-        this.totalWireSyncTransmitted += core.replicator.stats.wireSync.tx
-        this.totalWireRequestReceived += core.replicator.stats.wireRequest.rx
-        this.totalWireRequestTransmitted += core.replicator.stats.wireRequest.tx
-        this.totalWireCancelReceived += core.replicator.stats.wireCancel.rx
-        this.totalWireCancelTransmitted += core.replicator.stats.wireCancel.tx
-        this.totalWireDataReceived += core.replicator.stats.wireData.rx
-        this.totalWireDataTransmitted += core.replicator.stats.wireData.tx
-        this.totalWireWantReceived += core.replicator.stats.wireWant.rx
-        this.totalWireWantTransmitted += core.replicator.stats.wireWant.tx
-        this.totalWireBitfieldReceived += core.replicator.stats.wireBitfield.rx
-        this.totalWireBitfieldTransmitted += core.replicator.stats.wireBitfield.tx
-        this.totalWireRangeReceived += core.replicator.stats.wireRange.rx
-        this.totalWireRangeTransmitted += core.replicator.stats.wireRange.tx
-        this.totalWireExtensionReceived += core.replicator.stats.wireExtension.rx
-        this.totalWireExtensionTransmitted += core.replicator.stats.wireExtension.tx
-        this.totalHotswaps += core.replicator.stats.hotswaps || 0
-      }
+      processPersistedStats(this, core)
 
       for (const peer of core.peers) {
         this._totalPeerCoreCombos++
@@ -517,6 +518,51 @@ class HypercoreStatsSnapshot {
       }
     }
   }
+}
+
+function processPersistedStats (stats, core) {
+  if (core.replicator) {
+    stats.totalWireSyncReceived += core.replicator.stats.wireSync.rx
+    stats.totalWireSyncTransmitted += core.replicator.stats.wireSync.tx
+    stats.totalWireRequestReceived += core.replicator.stats.wireRequest.rx
+    stats.totalWireRequestTransmitted += core.replicator.stats.wireRequest.tx
+    stats.totalWireCancelReceived += core.replicator.stats.wireCancel.rx
+    stats.totalWireCancelTransmitted += core.replicator.stats.wireCancel.tx
+    stats.totalWireDataReceived += core.replicator.stats.wireData.rx
+    stats.totalWireDataTransmitted += core.replicator.stats.wireData.tx
+    stats.totalWireWantReceived += core.replicator.stats.wireWant.rx
+    stats.totalWireWantTransmitted += core.replicator.stats.wireWant.tx
+    stats.totalWireBitfieldReceived += core.replicator.stats.wireBitfield.rx
+    stats.totalWireBitfieldTransmitted += core.replicator.stats.wireBitfield.tx
+    stats.totalWireRangeReceived += core.replicator.stats.wireRange.rx
+    stats.totalWireRangeTransmitted += core.replicator.stats.wireRange.tx
+    stats.totalWireExtensionReceived += core.replicator.stats.wireExtension.rx
+    stats.totalWireExtensionTransmitted += core.replicator.stats.wireExtension.tx
+    stats.totalHotswaps += core.replicator.stats.hotswaps || 0
+  }
+}
+
+function initPersistedStats () {
+  const stats = {}
+  stats.totalWireSyncReceived = 0
+  stats.totalWireSyncTransmitted = 0
+  stats.totalWireRequestReceived = 0
+  stats.totalWireRequestTransmitted = 0
+  stats.totalWireCancelReceived = 0
+  stats.totalWireCancelTransmitted = 0
+  stats.totalWireDataReceived = 0
+  stats.totalWireDataTransmitted = 0
+  stats.totalWireWantReceived = 0
+  stats.totalWireWantTransmitted = 0
+  stats.totalWireBitfieldReceived = 0
+  stats.totalWireBitfieldTransmitted = 0
+  stats.totalWireRangeReceived = 0
+  stats.totalWireRangeTransmitted = 0
+  stats.totalWireExtensionReceived = 0
+  stats.totalWireExtensionTransmitted = 0
+  stats.totalHotswaps = 0
+
+  return stats
 }
 
 module.exports = HypercoreStats
