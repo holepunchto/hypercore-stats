@@ -1,4 +1,6 @@
 const b4a = require('b4a')
+const PassiveWatcher = require('passive-core-watcher')
+const safetyCatch = require('safety-catch')
 
 class HypercoreStats {
   constructor ({ cacheExpiryMs = 5000 } = {}) {
@@ -24,20 +26,19 @@ class HypercoreStats {
     this._cachedStats = null
   }
 
-  addCore (core) {
-    if (!core.key) {
+  addCore (weakSession) {
+    if (!weakSession.key) {
       throw new Error('Can only add a core after its key is set (await ready)')
     }
 
-    if (!this._globalCache && core.globalCache) {
-      this._globalCache = core.globalCache
+    if (!this._globalCache && weakSession.globalCache) {
+      this._globalCache = weakSession.globalCache
     }
 
-    // Note: if a core with that key was already added,
-    // it gets overwritten
-    // DEVNOTE: this assumes we do not add any state to the hypercores
-    // (so no event handlers)
-    this.cores.set(b4a.toString(core.key, 'hex'), core)
+    // Assumption: this close handler always executes
+    // before addCore can be called again for the same core
+    weakSession.on('close', () => this.gcCore(weakSession))
+    this.cores.set(b4a.toString(weakSession.key, 'hex'), weakSession)
   }
 
   gcCore (core) {
@@ -420,24 +421,17 @@ class HypercoreStats {
     })
   }
 
-  static fromCorestore (store) {
+  static async fromCorestore (store) {
     const hypercoreStats = new this()
-    store.on('core-open', core => {
-      hypercoreStats.addCore(core)
+    const passiveWatcher = new PassiveWatcher(store, {
+      watch: () => true, // watch all cores
+      open: hypercoreStats.addCore.bind(hypercoreStats)
     })
-    store.on('core-close', core => {
-      if (store.closing) return
-      hypercoreStats.gcCore(core)
+    store.on('close', async () => {
+      passiveWatcher.close().catch(safetyCatch)
     })
 
-    // Add already-opened cores
-    for (const core of [...store.cores.values()]) {
-      // DEVNOTE: core-open is emitted after a core is ready
-      // so if not yet opened, we will process it then
-      if (core.opened === true) {
-        hypercoreStats.addCore(core)
-      }
-    }
+    await passiveWatcher.ready()
 
     return hypercoreStats
   }
