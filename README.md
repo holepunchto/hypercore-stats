@@ -12,8 +12,8 @@ npm i hypercore-stats
 
 ## Versions
 
-- V1.x.x works for Hypercore 10.x and Corestore 6.x
-- V2.x.x works for Hypercore v11.x.x and Corestore v7.x.x
+- V1 works for Hypercore V10 and Corestore V6
+- V2 works for Hypercore V11 and Corestore V7
 
 ## Usage
 
@@ -27,7 +27,7 @@ const store = new Corestore('dummy-corestore')
 const hypercoreStats = await HypercoreStats.fromCorestore(store)
 hypercoreStats.registerPrometheusMetrics(promClient)
 
-// The Prometheus metrics are typically exposed to a metrics scraper
+// The Prometheus metrics are typically collected by a metrics scraper, but we just print them here to illustrate
 const metrics = await promClient.register.metrics()
 console.log(metrics)
 ```
