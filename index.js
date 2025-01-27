@@ -430,6 +430,10 @@ class HypercoreStats extends EventEmitter {
       watch: () => true, // watch all cores
       open: hypercoreStats.addCore.bind(hypercoreStats)
     })
+    passiveWatcher.on('oncoreopen-error', (e) => {
+      // For debugging (otherwise just swallowed)
+      hypercoreStats.emit('internal-error', e)
+    })
     store.on('close', async () => {
       passiveWatcher.destroy()
     })
