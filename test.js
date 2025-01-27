@@ -167,7 +167,7 @@ test('fromCorestore init', async (t) => {
   const store = new Corestore(await getTmp(t), { globalCache: new Rache() })
   const core = store.get({ name: 'core' })
 
-  const stats = await HypercoreStats.fromCorestore(store)
+  const stats = HypercoreStats.fromCorestore(store)
   await core.ready()
   t.is(stats.cores.size, 1, 'init core added')
   t.is(stats.totalGlobalCacheEntries, 0, 'total cache entries available when globalCache set')
@@ -210,7 +210,17 @@ test('gc core if removed from corestore', async (t) => {
   swarm2.join(readCore.discoveryKey)
   await readCore.get(1)
 
-  const stats = await HypercoreStats.fromCorestore(store)
+  const stats = HypercoreStats.fromCorestore(store)
+  await new Promise(resolve => {
+    let count = 0
+    stats.on('add-core', () => {
+      if (++count >= 2) {
+        resolve()
+        stats.off('add-core')
+      }
+    })
+  })
+
   t.is(stats.cores.size, 2, 'cores added')
   t.is(stats.persistedStats.totalWireRequestReceived, 0, 'nothing persisted yet (sanity check)')
   const wireReqRx = stats.totalWireRequestReceived
