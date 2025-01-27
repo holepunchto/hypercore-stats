@@ -1,9 +1,11 @@
+const { EventEmitter } = require('events')
 const b4a = require('b4a')
 const PassiveWatcher = require('passive-core-watcher')
-const safetyCatch = require('safety-catch')
 
-class HypercoreStats {
+class HypercoreStats extends EventEmitter {
   constructor ({ cacheExpiryMs = 5000 } = {}) {
+    super()
+
     this.cores = new Map()
     this.cacheExpiryMs = cacheExpiryMs
     this._globalCache = null
@@ -39,6 +41,7 @@ class HypercoreStats {
     // before addCore can be called again for the same core
     weakSession.on('close', () => this.gcCore(weakSession))
     this.cores.set(b4a.toString(weakSession.key, 'hex'), weakSession)
+    this.emit('add-core')
   }
 
   gcCore (core) {
@@ -421,17 +424,19 @@ class HypercoreStats {
     })
   }
 
-  static async fromCorestore (store) {
+  static fromCorestore (store) {
     const hypercoreStats = new this()
     const passiveWatcher = new PassiveWatcher(store, {
       watch: () => true, // watch all cores
       open: hypercoreStats.addCore.bind(hypercoreStats)
     })
-    store.on('close', async () => {
-      passiveWatcher.close().catch(safetyCatch)
+    passiveWatcher.on('oncoreopen-error', (e) => {
+      // For debugging (otherwise just swallowed)
+      hypercoreStats.emit('internal-error', e)
     })
-
-    await passiveWatcher.ready()
+    store.on('close', async () => {
+      passiveWatcher.destroy()
+    })
 
     return hypercoreStats
   }
