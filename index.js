@@ -199,6 +199,36 @@ class HypercoreStats extends EventEmitter {
     this._cachedStats = null
   }
 
+  toString () {
+    return `Hypercore Stats
+  - hypercore_total_cores: ${this.totalCores}
+  - hypercore_total_fully_downloaded_cores: ${this.totalFullyDownloadedCores}
+  - hypercore_total_length: ${this.getTotalLength()}
+  - hypercore_total_inflight_blocks: ${this.getTotalInflightBlocks()}
+  - hypercore_total_max_inflight_blocks: ${this.getTotalMaxInflightBlocks()}
+  - hypercore_total_peers: ${this.getTotalPeers()}
+  - hypercore_round_trip_time_avg_seconds: ${this.getAvgRoundTripTimeMs() / 1000}
+  - hypercore_sessions_total: ${this.getTotalSessions()}
+  - hypercore_total_wire_sync_received: ${this.totalWireSyncReceived}
+  - hypercore_total_wire_sync_transmitted: ${this.totalWireSyncTransmitted}
+  - hypercore_total_wire_request_received: ${this.totalWireRequestReceived}
+  - hypercore_total_wire_request_transmitted: ${this.totalWireRequestTransmitted}
+  - hypercore_total_wire_cancel_received: ${this.totalWireCancelReceived}
+  - hypercore_total_wire_cancel_transmitted: ${this.totalWireCancelTransmitted}
+  - hypercore_total_wire_data_received: ${this.totalWireDataReceived}
+  - hypercore_total_wire_data_transmitted: ${this.totalWireDataTransmitted}
+  - hypercore_total_wire_want_received: ${this.totalWireWantReceived}
+  - hypercore_total_wire_want_transmitted: ${this.totalWireWantTransmitted}
+  - hypercore_total_wire_bitfield_received: ${this.totalWireBitfieldReceived}
+  - hypercore_total_wire_bitfield_transmitted: ${this.totalWireBitfieldTransmitted}
+  - hypercore_total_wire_range_received: ${this.totalWireRangeReceived}
+  - hypercore_total_wire_range_transmitted: ${this.totalWireRangeTransmitted}
+  - hypercore_total_wire_extension_received: ${this.totalWireExtensionReceived}
+  - hypercore_total_wire_extension_transmitted: ${this.totalWireExtensionTransmitted}
+  - hypercore_total_hotswaps: ${this.totalHotswaps}
+  - hypercore_global_cache_entries_total: ${this.totalGlobalCacheEntries}`
+  }
+
   registerPrometheusMetrics (promClient) {
     const self = this
 

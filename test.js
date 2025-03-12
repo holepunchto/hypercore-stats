@@ -127,6 +127,16 @@ test('Can register and get prometheus metrics', async (t) => {
   await testnet.destroy()
 })
 
+test('toString', async (t) => {
+  const store = new Corestore(await getTmp(t))
+  const core = store.get({ name: 'core' })
+  await core.ready()
+
+  const stats = new HypercoreStats({ cacheExpiryMs: 1000 })
+  const str = stats.toString()
+  t.ok(str.includes('Hypercore Stats'), 'Includes stats')
+})
+
 test('Cache-expiry logic', async (t) => {
   const store = new Corestore(await getTmp(t))
   const core = store.get({ name: 'core' })

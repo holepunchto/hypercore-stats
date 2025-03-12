@@ -31,3 +31,7 @@ hypercoreStats.registerPrometheusMetrics(promClient)
 const metrics = await promClient.register.metrics()
 console.log(metrics)
 ```
+
+## Usage Without Prometheus
+
+`hypercoreStats.toString()` returns a string representation of all stats.
