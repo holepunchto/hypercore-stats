@@ -1,3 +1,4 @@
+const { once } = require('events')
 const test = require('brittle')
 const Corestore = require('corestore')
 const getTmp = require('test-tmp')
@@ -127,6 +128,16 @@ test('Can register and get prometheus metrics', async (t) => {
   await testnet.destroy()
 })
 
+test('toString', async (t) => {
+  const store = new Corestore(await getTmp(t))
+  const core = store.get({ name: 'core' })
+  await core.ready()
+
+  const stats = new HypercoreStats({ cacheExpiryMs: 1000 })
+  const str = stats.toString()
+  t.ok(str.includes('Hypercore Stats'), 'Includes stats')
+})
+
 test('Cache-expiry logic', async (t) => {
   const store = new Corestore(await getTmp(t))
   const core = store.get({ name: 'core' })
@@ -228,14 +239,11 @@ test('gc core if removed from corestore', async (t) => {
 
   t.is(stats.cores.size, 2, 'sanity check')
 
-  await core1.close()
-
-  // We need to kill the replication session too
-  await swarm1.destroy()
-
-  // DENVOTE: not 100% sure it's guaranteed that the
-  // watcher already processed the close. If this ever
-  // flakes, add some accounting in the test to make sure
+  await Promise.all([
+    once(stats, 'gc'), // Takes several seconds due to internal corestore pool logic
+    core1.close(),
+    swarm1.destroy() // We need to kill the replication session too
+  ])
 
   stats.bustCache()
 

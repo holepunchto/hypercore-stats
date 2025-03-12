@@ -38,6 +38,6 @@
   },
   "dependencies": {
     "b4a": "^1.6.6",
-    "passive-core-watcher": "^1.0.0"
+    "passive-core-watcher": "^1.0.1"
   }
 }
