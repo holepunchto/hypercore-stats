@@ -55,6 +55,7 @@ class HypercoreStats extends EventEmitter {
 
     // Persist those stats we sum across all cores
     processPersistedStats(this.persistedStats, core)
+    this.emit('gc')
   }
 
   bustCache () {

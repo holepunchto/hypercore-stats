@@ -1,3 +1,4 @@
+const { once } = require('events')
 const test = require('brittle')
 const Corestore = require('corestore')
 const getTmp = require('test-tmp')
@@ -238,14 +239,11 @@ test('gc core if removed from corestore', async (t) => {
 
   t.is(stats.cores.size, 2, 'sanity check')
 
-  await core1.close()
-
-  // We need to kill the replication session too
-  await swarm1.destroy()
-
-  // DENVOTE: not 100% sure it's guaranteed that the
-  // watcher already processed the close. If this ever
-  // flakes, add some accounting in the test to make sure
+  await Promise.all([
+    once(stats, 'gc'), // Takes several seconds due to internal corestore pool logic
+    core1.close(),
+    swarm1.destroy() // We need to kill the replication session too
+  ])
 
   stats.bustCache()
 
