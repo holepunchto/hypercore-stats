@@ -25,6 +25,12 @@
   "files": [
     "index.js"
   ],
+  "imports": {
+    "events": {
+      "bare": "bare-events",
+      "default": "events"
+    }
+  },
   "devDependencies": {
     "brittle": "^3.6.1",
     "corestore": "^7.0.0",
@@ -38,6 +44,7 @@
   },
   "dependencies": {
     "b4a": "^1.6.6",
+    "bare-events": "^2.5.4",
     "passive-core-watcher": "^1.0.1"
   }
 }
