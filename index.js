@@ -185,6 +185,14 @@ class HypercoreStats extends EventEmitter {
     return this._getStats().totalHotswaps
   }
 
+  get invalidData () {
+    return this._getStats().invalidData
+  }
+
+  get invalidRequests () {
+    return this._getStats().invalidRequests
+  }
+
   // Caches the result for this._lastStatsCalcTime ms
   _getStats () {
     if (this._cachedStats && this._lastStatsCalcTime + this.cacheExpiryMs > Date.now()) {
@@ -453,6 +461,20 @@ class HypercoreStats extends EventEmitter {
         }
       }
     })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_invalid_data',
+      help: 'Total amount of times invalid data was received',
+      collect () {
+        this.set(self.invalidData)
+      }
+    })
+    new promClient.Gauge({ // eslint-disable-line no-new
+      name: 'hypercore_invalid_requests',
+      help: 'Total amount of times an invalid request was received',
+      collect () {
+        this.set(self.invalidRequests)
+      }
+    })
   }
 
   static fromCorestore (store) {
@@ -498,6 +520,8 @@ class HypercoreStatsSnapshot {
     this.totalWireExtensionReceived = persistedStats.totalWireExtensionReceived
     this.totalWireExtensionTransmitted = persistedStats.totalWireExtensionTransmitted
     this.totalHotswaps = persistedStats.totalHotswaps
+    this.invalidData = persistedStats.invalidData
+    this.invalidRequests = persistedStats.invalidRequests
 
     this.totalCores = 0
     this.totalLength = 0
@@ -569,6 +593,8 @@ function processPersistedStats (stats, core) {
     stats.totalWireExtensionReceived += core.replicator.stats.wireExtension.rx
     stats.totalWireExtensionTransmitted += core.replicator.stats.wireExtension.tx
     stats.totalHotswaps += core.replicator.stats.hotswaps || 0
+    stats.invalidData += core.replicator.stats.invalidData
+    stats.invalidRequests += core.replicator.stats.invalidRequests
   }
 }
 
@@ -591,6 +617,8 @@ function initPersistedStats () {
   stats.totalWireExtensionReceived = 0
   stats.totalWireExtensionTransmitted = 0
   stats.totalHotswaps = 0
+  stats.invalidData = 0
+  stats.invalidRequests = 0
 
   return stats
 }
