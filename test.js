@@ -61,6 +61,9 @@ test('Can register and get prometheus metrics', async (t) => {
     t.is(getMetricValue(lines, 'hypercore_total_wire_range_transmitted'), 0, 'hypercore_total_wire_range_transmitted init 0')
     t.is(getMetricValue(lines, 'hypercore_total_wire_extension_received'), 0, 'hypercore_total_wire_extension_received init 0')
     t.is(getMetricValue(lines, 'hypercore_total_wire_extension_transmitted'), 0, 'hypercore_total_wire_extension_transmitted init 0')
+
+    t.is(getMetricValue(lines, 'hypercore_invalid_data'), 0, 'hypercore_invalid_data init 0')
+    t.is(getMetricValue(lines, 'hypercore_invalid_requests'), 0, 'hypercore_invalid_requests init 0')
   }
 
   await core.append('block0')
