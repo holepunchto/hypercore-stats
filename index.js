@@ -235,7 +235,9 @@ class HypercoreStats extends EventEmitter {
   - hypercore_total_wire_extension_received: ${this.totalWireExtensionReceived}
   - hypercore_total_wire_extension_transmitted: ${this.totalWireExtensionTransmitted}
   - hypercore_total_hotswaps: ${this.totalHotswaps}
-  - hypercore_global_cache_entries_total: ${this.totalGlobalCacheEntries}`
+  - hypercore_global_cache_entries_total: ${this.totalGlobalCacheEntries}
+  - hypercore_invalid_data: ${this.invalidData}
+  - hypercore_invalid_requests: ${this.invalidRequests}`
   }
 
   registerPrometheusMetrics (promClient) {
