@@ -131,7 +131,7 @@ test('Can register and get prometheus metrics', async (t) => {
   await testnet.destroy()
 })
 
-test('Expected amount of stats + sonsistent between prometheus, json and str', async (t) => {
+test('Expected amount of stats + consistent between prometheus, json and str', async (t) => {
   const store = new Corestore(await getTmp(t))
   const core = store.get({ name: 'core' })
   await core.append('block 1')
