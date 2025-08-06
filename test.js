@@ -131,14 +131,24 @@ test('Can register and get prometheus metrics', async (t) => {
   await testnet.destroy()
 })
 
-test('toString', async (t) => {
+test('Expected amount of stats + sonsistent between prometheus, json and str', async (t) => {
   const store = new Corestore(await getTmp(t))
   const core = store.get({ name: 'core' })
-  await core.ready()
+  await core.append('block 1')
 
-  const stats = new HypercoreStats({ cacheExpiryMs: 1000 })
-  const str = stats.toString()
-  t.ok(str.includes('Hypercore Stats'), 'Includes stats')
+  const stats = HypercoreStats.fromCorestore(store)
+  stats.registerPrometheusMetrics(promClient)
+  t.teardown(() => {
+    promClient.register.clear()
+  })
+
+  const nrPromMetrics = (await promClient.register.metrics()).split('\n\n').length
+  const nrJsonMetrics = [...Object.keys(stats.toJson())].length
+  const nrTxtMetrics = stats.toString().split('\n').length - 1
+
+  t.is(nrPromMetrics, 28, 'expected amount of stats')
+  t.is(nrPromMetrics, nrJsonMetrics, 'consistent amount of prometheus and json metrics')
+  t.is(nrTxtMetrics, nrJsonMetrics, 'consistent amount of txt and json metrics')
 })
 
 test('Cache-expiry logic', async (t) => {
