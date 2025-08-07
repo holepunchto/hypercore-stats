@@ -208,6 +208,16 @@ class HypercoreStats extends EventEmitter {
     this._cachedStats = null
   }
 
+  toJson () {
+    this.bustCache() // Always fresh stats for json
+    const stats = this._getStats().toJson()
+
+    // TODO: this should also be in the snapshot?
+    stats.totalGlobalCacheEntries = this.totalGlobalCacheEntries
+
+    return stats
+  }
+
   toString () {
     return `Hypercore Stats
   - hypercore_total_cores: ${this.totalCores}
@@ -573,6 +583,25 @@ class HypercoreStatsSnapshot {
         this._totalRoundTripTime += udxStream.rtt
       }
     }
+  }
+
+  toJson () {
+    const stats = { ...this }
+
+    // TODO: refactor so this does not need special casing
+    stats.totalPeers = this.totalPeers
+    stats.rttAvgSeconds = this.avgRoundTripTimeMs / 1000
+
+    // Delete the helpers
+    const toDel = ['cores']
+    for (const key of Object.keys(stats)) {
+      if (key.startsWith('_')) toDel.push(key)
+    }
+    for (const key of toDel) {
+      delete stats[key]
+    }
+
+    return stats
   }
 }
 
