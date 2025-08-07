@@ -35,3 +35,5 @@ console.log(metrics)
 ## Usage Without Prometheus
 
 `hypercoreStats.toString()` returns a string representation of all stats.
+
+`hypercoreStats.toJson()` returns a json representation of all stats.
