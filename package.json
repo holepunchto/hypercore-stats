@@ -1,6 +1,6 @@
 {
   "name": "hypercore-stats",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Stats for Hypercores, with Prometheus support",
   "main": "index.js",
   "scripts": {
