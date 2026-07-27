@@ -3,7 +3,7 @@ const b4a = require('b4a')
 const PassiveWatcher = require('passive-core-watcher')
 
 class HypercoreStats extends EventEmitter {
-  constructor ({ cacheExpiryMs = 5000 } = {}) {
+  constructor({ cacheExpiryMs = 5000 } = {}) {
     super()
 
     this.cores = new Map()
@@ -28,7 +28,7 @@ class HypercoreStats extends EventEmitter {
     this._cachedStats = null
   }
 
-  addCore (weakSession) {
+  addCore(weakSession) {
     if (!weakSession.key) {
       throw new Error('Can only add a core after its key is set (await ready)')
     }
@@ -44,7 +44,7 @@ class HypercoreStats extends EventEmitter {
     this.emit('add-core')
   }
 
-  gcCore (core) {
+  gcCore(core) {
     if (!core.key) return // TODO: figure out if this is even possible
 
     const id = b4a.toString(core.key, 'hex')
@@ -58,46 +58,46 @@ class HypercoreStats extends EventEmitter {
     this.emit('gc')
   }
 
-  bustCache () {
+  bustCache() {
     this._cachedStats = null
   }
 
-  get totalCores () {
+  get totalCores() {
     return this._getStats().totalCores
   }
 
-  get totalFullyDownloadedCores () {
+  get totalFullyDownloadedCores() {
     return this._getStats().fullyDownloadedCores
   }
 
-  get totalGlobalCacheEntries () {
+  get totalGlobalCacheEntries() {
     if (this._globalCache) {
       return this._globalCache.globalSize
     }
     return null
   }
 
-  getTotalLength () {
+  getTotalLength() {
     return this._getStats().totalLength
   }
 
-  getTotalPeers () {
+  getTotalPeers() {
     return this._getStats().totalPeers
   }
 
-  getTotalInflightBlocks () {
+  getTotalInflightBlocks() {
     return this._getStats().totalInflightBlocks
   }
 
-  getTotalMaxInflightBlocks () {
+  getTotalMaxInflightBlocks() {
     return this._getStats().totalMaxInflightBlocks
   }
 
-  getAvgRoundTripTimeMs () {
+  getAvgRoundTripTimeMs() {
     return this._getStats().avgRoundTripTimeMs
   }
 
-  getTotalSessions () {
+  getTotalSessions() {
     return this._getStats().totalSessions
   }
 
@@ -117,98 +117,100 @@ class HypercoreStats extends EventEmitter {
   //   return this._getStats().totalBytesDownloaded
   // }
 
-  get totalWireSyncReceived () {
+  get totalWireSyncReceived() {
     return this._getStats().totalWireSyncReceived
   }
 
-  get totalWireSyncTransmitted () {
+  get totalWireSyncTransmitted() {
     return this._getStats().totalWireSyncTransmitted
   }
 
-  get totalWireRequestReceived () {
+  get totalWireRequestReceived() {
     return this._getStats().totalWireRequestReceived
   }
 
-  get totalWireRequestTransmitted () {
+  get totalWireRequestTransmitted() {
     return this._getStats().totalWireRequestTransmitted
   }
 
-  get totalWireCancelReceived () {
+  get totalWireCancelReceived() {
     return this._getStats().totalWireCancelReceived
   }
 
-  get totalWireCancelTransmitted () {
+  get totalWireCancelTransmitted() {
     return this._getStats().totalWireCancelTransmitted
   }
 
-  get totalWireDataReceived () {
+  get totalWireDataReceived() {
     return this._getStats().totalWireDataReceived
   }
 
-  get totalWireDataTransmitted () {
+  get totalWireDataTransmitted() {
     return this._getStats().totalWireDataTransmitted
   }
 
-  get totalWireWantReceived () {
+  get totalWireWantReceived() {
     return this._getStats().totalWireWantReceived
   }
 
-  get totalWireWantTransmitted () {
+  get totalWireWantTransmitted() {
     return this._getStats().totalWireWantTransmitted
   }
 
-  get totalWireBitfieldReceived () {
+  get totalWireBitfieldReceived() {
     return this._getStats().totalWireBitfieldReceived
   }
 
-  get totalWireBitfieldTransmitted () {
+  get totalWireBitfieldTransmitted() {
     return this._getStats().totalWireBitfieldTransmitted
   }
 
-  get totalWireRangeReceived () {
+  get totalWireRangeReceived() {
     return this._getStats().totalWireRangeReceived
   }
 
-  get totalWireRangeTransmitted () {
+  get totalWireRangeTransmitted() {
     return this._getStats().totalWireRangeTransmitted
   }
 
-  get totalWireExtensionReceived () {
+  get totalWireExtensionReceived() {
     return this._getStats().totalWireExtensionReceived
   }
 
-  get totalWireExtensionTransmitted () {
+  get totalWireExtensionTransmitted() {
     return this._getStats().totalWireExtensionTransmitted
   }
 
-  get totalHotswaps () {
+  get totalHotswaps() {
     return this._getStats().totalHotswaps
   }
 
-  get invalidData () {
+  get invalidData() {
     return this._getStats().invalidData
   }
 
-  get invalidRequests () {
+  get invalidRequests() {
     return this._getStats().invalidRequests
   }
 
   // Caches the result for this._lastStatsCalcTime ms
-  _getStats () {
+  _getStats() {
     if (this._cachedStats && this._lastStatsCalcTime + this.cacheExpiryMs > Date.now()) {
       return this._cachedStats
     }
 
-    this._cachedStats = new HypercoreStatsSnapshot([...this.cores.values()], { ...this.persistedStats })
+    this._cachedStats = new HypercoreStatsSnapshot([...this.cores.values()], {
+      ...this.persistedStats
+    })
     this._lastStatsCalcTime = Date.now()
     return this._cachedStats
   }
 
-  clearCache () {
+  clearCache() {
     this._cachedStats = null
   }
 
-  toJson () {
+  toJson() {
     this.bustCache() // Always fresh stats for json
     const stats = this._getStats().toJson()
 
@@ -218,7 +220,7 @@ class HypercoreStats extends EventEmitter {
     return stats
   }
 
-  toString () {
+  toString() {
     return `Hypercore Stats
   - hypercore_total_cores: ${this.totalCores}
   - hypercore_total_fully_downloaded_cores: ${this.totalFullyDownloadedCores}
@@ -250,67 +252,75 @@ class HypercoreStats extends EventEmitter {
   - hypercore_invalid_requests: ${this.invalidRequests}`
   }
 
-  registerPrometheusMetrics (promClient) {
+  registerPrometheusMetrics(promClient) {
     const self = this
 
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_cores',
       help: 'Total amount of hypercores',
-      collect () {
+      collect() {
         this.set(self.totalCores)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_fully_downloaded_cores',
       help: 'Total amount of fully downloaded hypercores (where its length equals its contiguous length)',
-      collect () {
+      collect() {
         this.set(self.totalFullyDownloadedCores)
       }
     })
 
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_length',
       help: 'Total length of all hypercores',
-      collect () {
+      collect() {
         this.set(self.getTotalLength())
       }
     })
 
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_inflight_blocks',
       help: 'Total amount of inflight blocks (summed across all cores)',
-      collect () {
+      collect() {
         this.set(self.getTotalInflightBlocks())
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_max_inflight_blocks',
       help: 'Total amount of maxInflight blocks (summed across all cores)',
-      collect () {
+      collect() {
         this.set(self.getTotalMaxInflightBlocks())
       }
     })
 
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_peers',
       help: 'Total amount of unique peers across all cores',
-      collect () {
+      collect() {
         this.set(self.getTotalPeers())
       }
     })
 
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_round_trip_time_avg_seconds',
       help: 'Average round-trip time (rtt) for the open replication streams',
-      collect () {
+      collect() {
         this.set(self.getAvgRoundTripTimeMs() / 1000)
       }
     })
 
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_sessions_total',
       help: 'Total amount of hypercore sessions, across all cores',
-      collect () {
+      collect() {
         this.set(self.getTotalSessions())
       }
     })
@@ -345,151 +355,171 @@ class HypercoreStats extends EventEmitter {
       }
     }) */
 
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_sync_received',
       help: 'Total amount of wire-sync messages received across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireSyncReceived)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_sync_transmitted',
       help: 'Total amount of wire-sync messages transmitted across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireSyncTransmitted)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_request_received',
       help: 'Total amount of wire-request messages received across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireRequestReceived)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_request_transmitted',
       help: 'Total amount of wire-request messages transmitted across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireRequestTransmitted)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_cancel_received',
       help: 'Total amount of wire-cancel messages received across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireCancelReceived)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_cancel_transmitted',
       help: 'Total amount of wire-cancel messages transmitted across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireCancelTransmitted)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_data_received',
       help: 'Total amount of wire-data messages received across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireDataReceived)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_data_transmitted',
       help: 'Total amount of wire-data messages transmitted across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireDataTransmitted)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_want_received',
       help: 'Total amount of wire-want messages received across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireWantReceived)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_want_transmitted',
       help: 'Total amount of wire-want messages transmitted across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireWantTransmitted)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_bitfield_received',
       help: 'Total amount of wire-bitfield messages received across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireBitfieldReceived)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_bitfield_transmitted',
       help: 'Total amount of wire-bitfield messages transmitted across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireBitfieldTransmitted)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_range_received',
       help: 'Total amount of wire-range messages received across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireRangeReceived)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_range_transmitted',
       help: 'Total amount of wire-range messages transmitted across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireRangeTransmitted)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_extension_received',
       help: 'Total amount of wire-extension messages received across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireExtensionReceived)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_wire_extension_transmitted',
       help: 'Total amount of wire-extension messages transmitted across all cores',
-      collect () {
+      collect() {
         this.set(self.totalWireExtensionTransmitted)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_total_hotswaps',
       help: 'Total amount of hotswaps scheduled',
-      collect () {
+      collect() {
         this.set(self.totalHotswaps)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_global_cache_entries_total',
       help: 'Total amount of global cache entries',
-      collect () {
+      collect() {
         if (self.totalGlobalCacheEntries !== null) {
           this.set(self.totalGlobalCacheEntries)
         }
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_invalid_data',
       help: 'Total amount of times invalid data was received',
-      collect () {
+      collect() {
         this.set(self.invalidData)
       }
     })
-    new promClient.Gauge({ // eslint-disable-line no-new
+    new promClient.Gauge({
+      // eslint-disable-line no-new
       name: 'hypercore_invalid_requests',
       help: 'Total amount of times an invalid request was received',
-      collect () {
+      collect() {
         this.set(self.invalidRequests)
       }
     })
   }
 
-  static fromCorestore (store) {
+  static fromCorestore(store) {
     const hypercoreStats = new this()
     const passiveWatcher = new PassiveWatcher(store, {
       watch: () => true, // watch all cores
@@ -508,7 +538,7 @@ class HypercoreStats extends EventEmitter {
 }
 
 class HypercoreStatsSnapshot {
-  constructor (cores, persistedStats) {
+  constructor(cores, persistedStats) {
     this.cores = cores
     this.fullyDownloadedCores = 0
 
@@ -549,17 +579,17 @@ class HypercoreStatsSnapshot {
     this.calculate()
   }
 
-  get totalPeers () {
+  get totalPeers() {
     return this._totalPeersConns.size
   }
 
-  get avgRoundTripTimeMs () {
+  get avgRoundTripTimeMs() {
     return this._totalPeerCoreCombos === 0
       ? 0
       : this._totalRoundTripTime / this._totalPeerCoreCombos
   }
 
-  calculate () {
+  calculate() {
     this.totalCores = this.cores.length
 
     for (const core of this.cores) {
@@ -585,7 +615,7 @@ class HypercoreStatsSnapshot {
     }
   }
 
-  toJson () {
+  toJson() {
     const stats = { ...this }
 
     // TODO: refactor so this does not need special casing
@@ -605,7 +635,7 @@ class HypercoreStatsSnapshot {
   }
 }
 
-function processPersistedStats (stats, core) {
+function processPersistedStats(stats, core) {
   if (core.replicator) {
     stats.totalWireSyncReceived += core.replicator.stats.wireSync.rx
     stats.totalWireSyncTransmitted += core.replicator.stats.wireSync.tx
@@ -629,7 +659,7 @@ function processPersistedStats (stats, core) {
   }
 }
 
-function initPersistedStats () {
+function initPersistedStats() {
   const stats = {}
   stats.totalWireSyncReceived = 0
   stats.totalWireSyncTransmitted = 0

@@ -34,10 +34,22 @@ test('Can register and get prometheus metrics', async (t) => {
 
     t.is(getMetricValue(lines, 'hypercore_total_cores'), 2, 'hypercore_total_cores')
     t.is(getMetricValue(lines, 'hypercore_total_length'), 0, 'hypercore_total_length init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_inflight_blocks'), 0, 'hypercore_total_inflight_blocks init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_max_inflight_blocks'), 0, 'hypercore_total_max_inflight_blocks init 0')
+    t.is(
+      getMetricValue(lines, 'hypercore_total_inflight_blocks'),
+      0,
+      'hypercore_total_inflight_blocks init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_max_inflight_blocks'),
+      0,
+      'hypercore_total_max_inflight_blocks init 0'
+    )
     t.is(getMetricValue(lines, 'hypercore_total_peers'), 0, 'hypercore_total_peers init 0')
-    t.is(getMetricValue(lines, 'hypercore_round_trip_time_avg_seconds'), 0, 'hypercore_round_trip_time_avg_seconds init 0')
+    t.is(
+      getMetricValue(lines, 'hypercore_round_trip_time_avg_seconds'),
+      0,
+      'hypercore_round_trip_time_avg_seconds init 0'
+    )
     t.ok(getMetricValue(lines, 'hypercore_sessions_total') > 0, 'hypercore_sessions_total')
 
     // t.is(getMetricValue(lines, 'hypercore_total_blocks_downloaded'), 0, 'hypercore_total_blocks_downloaded init 0')
@@ -45,25 +57,93 @@ test('Can register and get prometheus metrics', async (t) => {
     // t.is(getMetricValue(lines, 'hypercore_total_bytes_downloaded'), 0, 'hypercore_total_bytes_downloaded init 0')
     // t.is(getMetricValue(lines, 'hypercore_total_bytes_uploaded'), 0, 'hypercore_total_bytes_uploaded init 0')
 
-    t.is(getMetricValue(lines, 'hypercore_total_wire_sync_received'), 0, 'hypercore_total_wire_sync_received init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_sync_transmitted'), 0, 'hypercore_total_wire_sync_transmitted init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_request_received'), 0, 'hypercore_total_wire_request_received init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_request_transmitted'), 0, 'hypercore_total_wire_request_transmitted init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_cancel_received'), 0, 'hypercore_total_wire_cancel_received init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_cancel_transmitted'), 0, 'hypercore_total_wire_cancel_transmitted init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_data_received'), 0, 'hypercore_total_wire_data_received init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_data_transmitted'), 0, 'hypercore_total_wire_data_transmitted init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_want_received'), 0, 'hypercore_total_wire_want_received init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_want_transmitted'), 0, 'hypercore_total_wire_want_transmitted init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_bitfield_received'), 0, 'hypercore_total_wire_bitfield_received init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_bitfield_transmitted'), 0, 'hypercore_total_wire_bitfield_transmitted init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_range_received'), 0, 'hypercore_total_wire_range_received init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_range_transmitted'), 0, 'hypercore_total_wire_range_transmitted init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_extension_received'), 0, 'hypercore_total_wire_extension_received init 0')
-    t.is(getMetricValue(lines, 'hypercore_total_wire_extension_transmitted'), 0, 'hypercore_total_wire_extension_transmitted init 0')
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_sync_received'),
+      0,
+      'hypercore_total_wire_sync_received init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_sync_transmitted'),
+      0,
+      'hypercore_total_wire_sync_transmitted init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_request_received'),
+      0,
+      'hypercore_total_wire_request_received init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_request_transmitted'),
+      0,
+      'hypercore_total_wire_request_transmitted init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_cancel_received'),
+      0,
+      'hypercore_total_wire_cancel_received init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_cancel_transmitted'),
+      0,
+      'hypercore_total_wire_cancel_transmitted init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_data_received'),
+      0,
+      'hypercore_total_wire_data_received init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_data_transmitted'),
+      0,
+      'hypercore_total_wire_data_transmitted init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_want_received'),
+      0,
+      'hypercore_total_wire_want_received init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_want_transmitted'),
+      0,
+      'hypercore_total_wire_want_transmitted init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_bitfield_received'),
+      0,
+      'hypercore_total_wire_bitfield_received init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_bitfield_transmitted'),
+      0,
+      'hypercore_total_wire_bitfield_transmitted init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_range_received'),
+      0,
+      'hypercore_total_wire_range_received init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_range_transmitted'),
+      0,
+      'hypercore_total_wire_range_transmitted init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_extension_received'),
+      0,
+      'hypercore_total_wire_extension_received init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_total_wire_extension_transmitted'),
+      0,
+      'hypercore_total_wire_extension_transmitted init 0'
+    )
 
     t.is(getMetricValue(lines, 'hypercore_invalid_data'), 0, 'hypercore_invalid_data init 0')
-    t.is(getMetricValue(lines, 'hypercore_invalid_requests'), 0, 'hypercore_invalid_requests init 0')
+    t.is(
+      getMetricValue(lines, 'hypercore_invalid_requests'),
+      0,
+      'hypercore_invalid_requests init 0'
+    )
   }
 
   await core.append('block0')
@@ -91,7 +171,7 @@ test('Can register and get prometheus metrics', async (t) => {
   swarm1.join(core.discoveryKey)
   await swarm1.flush()
   swarm2.join(core.discoveryKey)
-  await new Promise(resolve => setImmediate(resolve))
+  await new Promise((resolve) => setImmediate(resolve))
 
   await readCore.get(0)
   // DEVNOTE: The precise lifecycle of when a peer is added to
@@ -99,7 +179,7 @@ test('Can register and get prometheus metrics', async (t) => {
   // Rather than waiting for the exact events,
   // we hack it out and wait a redundantly long time
   // (same applies to when an update event is registered, but we could listen for that event)
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  await new Promise((resolve) => setTimeout(resolve, 1000))
 
   {
     stats.clearCache()
@@ -118,12 +198,30 @@ test('Can register and get prometheus metrics', async (t) => {
     // t.is(getMetricValue(lines, 'hypercore_total_blocks_uploaded'), 1, 'hypercore_total_blocks_uploaded')
     // t.is(getMetricValue(lines, 'hypercore_total_bytes_downloaded'), 0, 'hypercore_total_bytes_downloaded')
     // t.ok(getMetricValue(lines, 'hypercore_total_bytes_uploaded') > 0, 'hypercore_total_bytes_uploaded')
-    t.ok(getMetricValue(lines, 'hypercore_total_wire_sync_received') > 0, 'hypercore_total_wire_sync_received')
-    t.ok(getMetricValue(lines, 'hypercore_total_wire_sync_transmitted') > 0, 'hypercore_total_wire_sync_transmitted')
-    t.ok(getMetricValue(lines, 'hypercore_total_wire_want_received') > 0, 'hypercore_total_wire_want_received')
-    t.ok(getMetricValue(lines, 'hypercore_total_wire_data_transmitted') > 0, 'hypercore_total_wire_data_transmitted')
-    t.ok(getMetricValue(lines, 'hypercore_total_wire_request_received') > 0, 'hypercore_total_wire_request_received')
-    t.ok(getMetricValue(lines, 'hypercore_total_wire_range_transmitted') > 0, 'hypercore_total_wire_range_transmitted')
+    t.ok(
+      getMetricValue(lines, 'hypercore_total_wire_sync_received') > 0,
+      'hypercore_total_wire_sync_received'
+    )
+    t.ok(
+      getMetricValue(lines, 'hypercore_total_wire_sync_transmitted') > 0,
+      'hypercore_total_wire_sync_transmitted'
+    )
+    t.ok(
+      getMetricValue(lines, 'hypercore_total_wire_want_received') > 0,
+      'hypercore_total_wire_want_received'
+    )
+    t.ok(
+      getMetricValue(lines, 'hypercore_total_wire_data_transmitted') > 0,
+      'hypercore_total_wire_data_transmitted'
+    )
+    t.ok(
+      getMetricValue(lines, 'hypercore_total_wire_request_received') > 0,
+      'hypercore_total_wire_request_received'
+    )
+    t.ok(
+      getMetricValue(lines, 'hypercore_total_wire_range_transmitted') > 0,
+      'hypercore_total_wire_range_transmitted'
+    )
   }
 
   await swarm1.destroy()
@@ -178,7 +276,7 @@ test('Cache-expiry logic', async (t) => {
     t.is(getMetricValue(lines, 'hypercore_total_cores'), 0, 'still cached 0 value')
   }
 
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  await new Promise((resolve) => setTimeout(resolve, 1000))
   {
     const metrics = await promClient.register.metrics()
 
@@ -235,7 +333,7 @@ test('gc core if removed from corestore', async (t) => {
   await readCore.get(1)
 
   const stats = HypercoreStats.fromCorestore(store)
-  await new Promise(resolve => {
+  await new Promise((resolve) => {
     let count = 0
     stats.on('add-core', () => {
       if (++count >= 2) {
@@ -266,7 +364,7 @@ test('gc core if removed from corestore', async (t) => {
   await testnet.destroy()
 })
 
-function getMetricValue (lines, name) {
+function getMetricValue(lines, name) {
   const match = lines.find((l) => l.startsWith(`${name} `))
   if (!match) throw new Error(`No match for ${name}`)
 
