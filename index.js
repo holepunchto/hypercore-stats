@@ -596,7 +596,7 @@ class HypercoreStatsSnapshot {
       this.totalLength += core.length
       if (core.length === core.contiguousLength) this.fullyDownloadedCores++
 
-      this.totalSessions += core.sessions.length
+      this.totalSessions += core.core?.activeSessions || 0
       // this.totalBlocksUploaded += core.stats.blocksUploaded
       // this.totalBlocksDownloaded += core.stats.blocksDownloaded
       // this.totalBytesUploaded += core.stats.bytesUploaded
