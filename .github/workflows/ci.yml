@@ -20,5 +20,6 @@ jobs:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: holepunchto/actions/node-base@v1
+      - uses: holepunchto/actions/bare-base@v1
       - run: npm test
+      - run: npm run test:bare

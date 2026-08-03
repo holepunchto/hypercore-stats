@@ -1,5 +1,6 @@
 const { EventEmitter } = require('events')
 const b4a = require('b4a')
+const fs = require('fs/promises')
 const PassiveWatcher = require('passive-core-watcher')
 
 class HypercoreStats extends EventEmitter {
@@ -191,6 +192,25 @@ class HypercoreStats extends EventEmitter {
 
   get invalidRequests() {
     return this._getStats().invalidRequests
+  }
+
+  getFilesystemSizeBytes() {
+    return this._getFilesystemStat((stats) => stats.blocks * stats.frsize)
+  }
+
+  getFilesystemAvailBytes() {
+    return this._getFilesystemStat((stats) => stats.bavail * stats.frsize)
+  }
+
+  async _getFilesystemStat(statsFunc) {
+    const path = this.cores.values().next().value?.core?.storage?.store?.path
+    if (path) {
+      try {
+        const stats = await fs.statfs(path)
+        return statsFunc(stats)
+      } catch {}
+    }
+    return 0
   }
 
   // Caches the result for this._lastStatsCalcTime ms
@@ -515,6 +535,22 @@ class HypercoreStats extends EventEmitter {
       help: 'Total amount of times an invalid request was received',
       collect() {
         this.set(self.invalidRequests)
+      }
+    })
+    new promClient.Gauge({
+      // eslint-disable-line no-new
+      name: 'hypercore_filesystem_size_bytes',
+      help: 'Total storage capacity',
+      async collect() {
+        this.set(await self.getFilesystemSizeBytes())
+      }
+    })
+    new promClient.Gauge({
+      // eslint-disable-line no-new
+      name: 'hypercore_filesystem_avail_bytes',
+      help: 'Available storage',
+      async collect() {
+        this.set(await self.getFilesystemAvailBytes())
       }
     })
   }

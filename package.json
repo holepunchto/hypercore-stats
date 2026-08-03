@@ -6,7 +6,8 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npm run format:check && lunte && brittle test.js"
+    "test": "npm run format:check && lunte && brittle test.js",
+    "test:bare": "brittle-bare test.js"
   },
   "repository": {
     "type": "git",
@@ -31,9 +32,18 @@
     "events": {
       "bare": "bare-events",
       "default": "events"
+    },
+    "fs/promises": {
+      "bare": "bare-fs/promises",
+      "default": "fs/promises"
+    },
+    "prom-client": {
+      "bare": "bare-prom-client",
+      "default": "prom-client"
     }
   },
   "devDependencies": {
+    "bare-prom-client": "^15.1.9",
     "brittle": "^3.6.1",
     "corestore": "^7.0.0",
     "hypercore": "^11.12.0",
@@ -49,6 +59,7 @@
   "dependencies": {
     "b4a": "^1.6.6",
     "bare-events": "^2.5.4",
+    "bare-fs": "^4.8.0",
     "passive-core-watcher": "^1.0.1"
   }
 }

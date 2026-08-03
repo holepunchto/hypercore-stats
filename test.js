@@ -23,10 +23,27 @@ test('Can register and get prometheus metrics', async (t) => {
     promClient.register.clear()
   })
 
+  {
+    // filysystem metrics are 0 before cores are added
+    const metrics = await promClient.register.metrics()
+    const lines = metrics.split('\n')
+    t.is(
+      getMetricValue(lines, 'hypercore_filesystem_size_bytes'),
+      0,
+      'hypercore_filesystem_size_bytes init 0'
+    )
+    t.is(
+      getMetricValue(lines, 'hypercore_filesystem_avail_bytes'),
+      0,
+      'hypercore_filesystem_avail_bytes init 0'
+    )
+  }
+
   stats.addCore(core)
   stats.addCore(core2)
 
   {
+    stats.clearCache()
     const metrics = await promClient.register.metrics()
     const lines = metrics.split('\n')
 
@@ -222,6 +239,14 @@ test('Can register and get prometheus metrics', async (t) => {
       getMetricValue(lines, 'hypercore_total_wire_range_transmitted') > 0,
       'hypercore_total_wire_range_transmitted'
     )
+    t.ok(
+      getMetricValue(lines, 'hypercore_filesystem_size_bytes') > 0,
+      'hypercore_filesystem_size_bytes'
+    )
+    t.ok(
+      getMetricValue(lines, 'hypercore_filesystem_avail_bytes') > 0,
+      'hypercore_filesystem_avail_bytes'
+    )
   }
 
   await swarm1.destroy()
@@ -244,8 +269,11 @@ test('Expected amount of stats + consistent between prometheus, json and str', a
   const nrJsonMetrics = [...Object.keys(stats.toJson())].length
   const nrTxtMetrics = stats.toString().split('\n').length - 1
 
-  t.is(nrPromMetrics, 28, 'expected amount of stats')
-  t.is(nrPromMetrics, nrJsonMetrics, 'consistent amount of prometheus and json metrics')
+  t.is(nrPromMetrics, 30, 'expected amount of stats')
+  // the filesystem stats are async and are only in prometheus stats
+  // this is temporal, until either this module is rewritten or filesystem stats
+  // are moved from here to machine level stats
+  t.is(nrPromMetrics - 2, nrJsonMetrics, 'consistent amount of prometheus and json metrics')
   t.is(nrTxtMetrics, nrJsonMetrics, 'consistent amount of txt and json metrics')
 })
 
