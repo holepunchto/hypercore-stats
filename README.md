@@ -17,7 +17,7 @@ npm i hypercore-stats
 
 ## Usage
 
-```
+```js
 const Corestore = require('corestore')
 const HypercoreStats = require('hypercore-stats')
 const promClient = require('prom-client')
