@@ -1,7 +1,7 @@
 const { EventEmitter } = require('events')
 const b4a = require('b4a')
-const PassiveWatcher = require('passive-core-watcher')
 const fs = require('fs')
+const PassiveWatcher = require('passive-core-watcher')
 
 class HypercoreStats extends EventEmitter {
   constructor({ cacheExpiryMs = 5000 } = {}) {

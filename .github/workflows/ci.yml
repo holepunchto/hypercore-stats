@@ -22,4 +22,4 @@ jobs:
     steps:
       - uses: holepunchto/actions/bare-base@v1
       - run: npm test
-      - run: npm test:bare
+      - run: npm run test:bare
