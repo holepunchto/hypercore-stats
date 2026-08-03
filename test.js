@@ -270,7 +270,10 @@ test('Expected amount of stats + consistent between prometheus, json and str', a
   const nrTxtMetrics = stats.toString().split('\n').length - 1
 
   t.is(nrPromMetrics, 30, 'expected amount of stats')
-  t.is(nrPromMetrics, nrJsonMetrics, 'consistent amount of prometheus and json metrics')
+  // the filesystem stats are async and are only in prometheus stats
+  // this is temporal, until either this module is rewritten or filesystem stats
+  // are moved from here to machine level stats
+  t.is(nrPromMetrics - 2, nrJsonMetrics, 'consistent amount of prometheus and json metrics')
   t.is(nrTxtMetrics, nrJsonMetrics, 'consistent amount of txt and json metrics')
 })
 

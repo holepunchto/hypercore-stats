@@ -1,6 +1,6 @@
 const { EventEmitter } = require('events')
 const b4a = require('b4a')
-const fs = require('fs')
+const fs = require('fs/promises')
 const PassiveWatcher = require('passive-core-watcher')
 
 class HypercoreStats extends EventEmitter {
@@ -194,12 +194,23 @@ class HypercoreStats extends EventEmitter {
     return this._getStats().invalidRequests
   }
 
-  get filesystemSizeBytes() {
-    return this._getStats().filesystemSizeBytes
+  getFilesystemSizeBytes() {
+    return this._getFilesystemStat((stats) => stats.blocks * stats.frsize)
   }
 
-  get filesystemAvailBytes() {
-    return this._getStats().filesystemAvailBytes
+  getFilesystemAvailBytes() {
+    return this._getFilesystemStat((stats) => stats.bavail * stats.frsize)
+  }
+
+  async _getFilesystemStat(statsFunc) {
+    const path = this.cores.values().next().value?.core?.storage?.store?.path
+    if (path) {
+      try {
+        const stats = await fs.statfs(path)
+        return statsFunc(stats)
+      } catch {}
+    }
+    return 0
   }
 
   // Caches the result for this._lastStatsCalcTime ms
@@ -258,9 +269,7 @@ class HypercoreStats extends EventEmitter {
   - hypercore_total_hotswaps: ${this.totalHotswaps}
   - hypercore_global_cache_entries_total: ${this.totalGlobalCacheEntries}
   - hypercore_invalid_data: ${this.invalidData}
-  - hypercore_invalid_requests: ${this.invalidRequests}
-  - hypercore_filesystem_size_bytes: ${this.filesystemSizeBytes}
-  - hypercore_filesystem_avail_bytes: ${this.filesystemAvailBytes}`
+  - hypercore_invalid_requests: ${this.invalidRequests}`
   }
 
   registerPrometheusMetrics(promClient) {
@@ -532,16 +541,16 @@ class HypercoreStats extends EventEmitter {
       // eslint-disable-line no-new
       name: 'hypercore_filesystem_size_bytes',
       help: 'Total storage capacity',
-      collect() {
-        this.set(self.filesystemSizeBytes)
+      async collect() {
+        this.set(await self.getFilesystemSizeBytes())
       }
     })
     new promClient.Gauge({
       // eslint-disable-line no-new
       name: 'hypercore_filesystem_avail_bytes',
       help: 'Available storage',
-      collect() {
-        this.set(self.filesystemAvailBytes)
+      async collect() {
+        this.set(await self.getFilesystemAvailBytes())
       }
     })
   }
@@ -598,8 +607,6 @@ class HypercoreStatsSnapshot {
     this.totalMaxInflightBlocks = 0
     this._totalRoundTripTime = 0
     this.totalSessions = 0
-    this.filesystemSizeBytes = 0
-    this.filesystemAvailBytes = 0
     // this.totalBlocksUploaded = 0
     // this.totalBlocksDownloaded = 0
     // this.totalBytesUploaded = 0
@@ -620,15 +627,6 @@ class HypercoreStatsSnapshot {
 
   calculate() {
     this.totalCores = this.cores.length
-
-    if (this.cores.length > 0 && this.cores[0].core?.storage?.store?.path) {
-      const stats = fs.statfsSync(this.cores[0].core.storage.store.path)
-      // bare environment does not provide frsize, so we fallback to bsize
-      // this should be fine for majority of cases
-      const blocksize = stats.frsize ?? stats.bsize
-      this.filesystemSizeBytes = stats.blocks * blocksize
-      this.filesystemAvailBytes = stats.bavail * blocksize
-    }
 
     for (const core of this.cores) {
       this.totalLength += core.length
