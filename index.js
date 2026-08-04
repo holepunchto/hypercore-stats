@@ -207,6 +207,8 @@ class HypercoreStats extends EventEmitter {
     if (path) {
       try {
         const stats = await fs.statfs(path)
+        // fallback frsize in case frsize is not available (older node versions)
+        stats.frsize ??= stats.bsize
         return statsFunc(stats)
       } catch {}
     }
