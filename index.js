@@ -563,17 +563,6 @@ class HypercoreStats extends EventEmitter {
         this.set(await self.getFilesystemAvailBytes())
       }
     })
-    new promClient.Gauge({
-      // eslint-disable-line no-new
-      name: 'hypercore_use_corestore',
-      help: 'Corestore in use, with its storage path (used for the filesystem stats) as label',
-      labelNames: ['path'],
-      collect() {
-        const path = self._getStoragePath()
-        if (path) this.labels(path).set(1)
-        else this.set(0)
-      }
-    })
   }
 
   static fromCorestore(store) {

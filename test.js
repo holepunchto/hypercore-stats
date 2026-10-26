@@ -272,11 +272,11 @@ test('Expected amount of stats + consistent between prometheus, json and str', a
   const nrJsonMetrics = [...Object.keys(stats.toJson())].length
   const nrTxtMetrics = stats.toString().split('\n').length - 1
 
-  t.is(nrPromMetrics, 31, 'expected amount of stats')
-  // the filesystem stats (and their storage path) are async and are only in prometheus stats
+  t.is(nrPromMetrics, 30, 'expected amount of stats')
+  // the filesystem stats are async and are only in prometheus stats
   // this is temporal, until either this module is rewritten or filesystem stats
   // are moved from here to machine level stats
-  t.is(nrPromMetrics - 3, nrJsonMetrics, 'consistent amount of prometheus and json metrics')
+  t.is(nrPromMetrics - 2, nrJsonMetrics, 'consistent amount of prometheus and json metrics')
   t.is(nrTxtMetrics, nrJsonMetrics, 'consistent amount of txt and json metrics')
 })
 
@@ -373,7 +373,7 @@ test('filesystem stats use the rocks dir when corestore created with a rocks ins
 
   const metrics = await promClient.register.metrics()
   const lines = metrics.split('\n')
-  t.ok(metrics.includes(`hypercore_use_corestore{path="${dir}"} 1`), 'uses the rocks dir')
+  t.is(stats._getStoragePath(), dir, 'uses the rocks dir')
   t.ok(
     getMetricValue(lines, 'hypercore_filesystem_size_bytes') > 0,
     'hypercore_filesystem_size_bytes'
