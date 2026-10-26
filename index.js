@@ -4,9 +4,10 @@ const fs = require('fs/promises')
 const PassiveWatcher = require('passive-core-watcher')
 
 class HypercoreStats extends EventEmitter {
-  constructor({ cacheExpiryMs = 5000 } = {}) {
+  constructor({ cacheExpiryMs = 5000, store = null } = {}) {
     super()
 
+    this.store = store
     this.cores = new Map()
     this.cacheExpiryMs = cacheExpiryMs
     this._globalCache = null
@@ -202,8 +203,15 @@ class HypercoreStats extends EventEmitter {
     return this._getFilesystemStat((stats) => stats.bavail * stats.frsize)
   }
 
+  _getStoragePath() {
+    const storage = this.store?.storage
+    if (!storage) return null
+    // Use the rocks path, as storage.path is its parent dir when the corestore is created with a rocks instance
+    return storage.rocks ? storage.rocks.path : storage.path
+  }
+
   async _getFilesystemStat(statsFunc) {
-    const path = this.cores.values().next().value?.core?.storage?.store?.path
+    const path = this._getStoragePath()
     if (path) {
       try {
         const stats = await fs.statfs(path)
@@ -558,7 +566,7 @@ class HypercoreStats extends EventEmitter {
   }
 
   static fromCorestore(store) {
-    const hypercoreStats = new this()
+    const hypercoreStats = new this({ store })
     const passiveWatcher = new PassiveWatcher(store, {
       watch: () => true, // watch all cores
       open: hypercoreStats.addCore.bind(hypercoreStats)

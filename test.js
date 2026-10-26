@@ -7,6 +7,7 @@ const promClient = require('prom-client')
 const setupTestnet = require('hyperdht/testnet')
 const Hyperswarm = require('hyperswarm')
 const Rache = require('rache')
+const RocksDB = require('rocksdb-native')
 
 const DEBUG = false
 
@@ -24,7 +25,7 @@ test('Can register and get prometheus metrics', async (t) => {
   })
 
   {
-    // filysystem metrics are 0 before cores are added
+    // filesystem metrics are 0 when no store is passed
     const metrics = await promClient.register.metrics()
     const lines = metrics.split('\n')
     t.is(
@@ -239,13 +240,15 @@ test('Can register and get prometheus metrics', async (t) => {
       getMetricValue(lines, 'hypercore_total_wire_range_transmitted') > 0,
       'hypercore_total_wire_range_transmitted'
     )
-    t.ok(
-      getMetricValue(lines, 'hypercore_filesystem_size_bytes') > 0,
-      'hypercore_filesystem_size_bytes'
+    t.is(
+      getMetricValue(lines, 'hypercore_filesystem_size_bytes'),
+      0,
+      'hypercore_filesystem_size_bytes 0 without store'
     )
-    t.ok(
-      getMetricValue(lines, 'hypercore_filesystem_avail_bytes') > 0,
-      'hypercore_filesystem_avail_bytes'
+    t.is(
+      getMetricValue(lines, 'hypercore_filesystem_avail_bytes'),
+      0,
+      'hypercore_filesystem_avail_bytes 0 without store'
     )
   }
 
@@ -325,6 +328,60 @@ test('fromCorestore init', async (t) => {
   const core2 = store.get({ name: 'core2' })
   await core2.ready()
   t.is(stats.cores.size, 2, 'new core added')
+})
+
+test('filesystem stats available without open cores when store passed', async (t) => {
+  const store = new Corestore(await getTmp(t))
+  await store.ready()
+
+  const stats = new HypercoreStats({ store })
+  stats.registerPrometheusMetrics(promClient)
+  t.teardown(async () => {
+    promClient.register.clear()
+    await store.close()
+  })
+
+  t.is(stats.cores.size, 0, 'no cores (sanity check)')
+
+  const metrics = await promClient.register.metrics()
+  const lines = metrics.split('\n')
+  t.ok(
+    getMetricValue(lines, 'hypercore_filesystem_size_bytes') > 0,
+    'hypercore_filesystem_size_bytes'
+  )
+  t.ok(
+    getMetricValue(lines, 'hypercore_filesystem_avail_bytes') > 0,
+    'hypercore_filesystem_avail_bytes'
+  )
+})
+
+test('filesystem stats use the rocks dir when corestore created with a rocks instance', async (t) => {
+  // Same setup as blind-peer: new Corestore(new RocksDB(storage))
+  const dir = await getTmp(t)
+  const store = new Corestore(new RocksDB(dir))
+  await store.ready()
+
+  const stats = HypercoreStats.fromCorestore(store)
+  stats.registerPrometheusMetrics(promClient)
+  t.teardown(async () => {
+    promClient.register.clear()
+    await store.close()
+  })
+
+  t.is(stats.cores.size, 0, 'no cores (sanity check)')
+  t.not(store.storage.path, dir, 'storage path is not the rocks dir (sanity check)')
+
+  const metrics = await promClient.register.metrics()
+  const lines = metrics.split('\n')
+  t.is(stats._getStoragePath(), dir, 'uses the rocks dir')
+  t.ok(
+    getMetricValue(lines, 'hypercore_filesystem_size_bytes') > 0,
+    'hypercore_filesystem_size_bytes'
+  )
+  t.ok(
+    getMetricValue(lines, 'hypercore_filesystem_avail_bytes') > 0,
+    'hypercore_filesystem_avail_bytes'
+  )
 })
 
 test('gc core if removed from corestore', async (t) => {
