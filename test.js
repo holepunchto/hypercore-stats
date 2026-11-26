@@ -436,7 +436,7 @@ test('rocksdb properties are cached', async (t) => {
 
   t.is(await stats.getRocksdbProperties(), before, 'served from cache')
 
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+  await new Promise((resolve) => setTimeout(resolve, 1100))
   const after = await stats.getRocksdbProperties()
   t.not(after, before, 'refreshed after expiry')
   t.ok(after.corestore['live-blob-file-size'] > before.corestore['live-blob-file-size'])

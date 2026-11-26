@@ -3,7 +3,8 @@ const b4a = require('b4a')
 const fs = require('fs/promises')
 const PassiveWatcher = require('passive-core-watcher')
 
-// Exposed as rocksdb_property_<name>; some walk all sst/blob files, hence cached
+// Exposed as rocksdb_property_
+// Cached because some walk all sst/blob files (should still be < 1ms even for 1Tb corestores)
 const ROCKSDB_PROPERTIES = [
   'live-sst-files-size',
   'total-sst-files-size',
@@ -256,10 +257,9 @@ class HypercoreStats extends EventEmitter {
       })
     }
 
-    const properties = await this._rocksdbPropertiesPending
-    this._rocksdbProperties = properties
+    this._rocksdbProperties = await this._rocksdbPropertiesPending
     this._rocksdbPropertiesTime = Date.now()
-    return properties
+    return this._rocksdbProperties
   }
 
   async _readRocksdbProperties() {
@@ -628,7 +628,6 @@ class HypercoreStats extends EventEmitter {
         labelNames: ['data'],
         async collect() {
           const properties = await self.getRocksdbProperties()
-          if (!properties) return
           for (const [data, values] of Object.entries(properties)) {
             if (values[property] !== undefined) this.set({ data }, values[property])
           }
