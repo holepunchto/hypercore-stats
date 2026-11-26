@@ -3,13 +3,32 @@ const b4a = require('b4a')
 const fs = require('fs/promises')
 const PassiveWatcher = require('passive-core-watcher')
 
+// Exposed as rocksdb_property_
+// Cached because some walk all sst/blob files (should still be < 1ms even for 1Tb corestores)
+const ROCKSDB_PROPERTIES = [
+  'live-sst-files-size',
+  'total-sst-files-size',
+  'live-blob-file-size',
+  'total-blob-file-size',
+  'live-blob-file-garbage-size',
+  'num-blob-files',
+  'estimate-live-data-size',
+  'estimate-pending-compaction-bytes',
+  'num-running-compactions',
+  'estimate-num-keys'
+]
+
 class HypercoreStats extends EventEmitter {
-  constructor({ cacheExpiryMs = 5000, store = null } = {}) {
+  constructor({ cacheExpiryMs = 5000, rocksdbPropertiesExpiryMs = 60_000, store = null } = {}) {
     super()
 
     this.store = store
     this.cores = new Map()
     this.cacheExpiryMs = cacheExpiryMs
+    this.rocksdbPropertiesExpiryMs = rocksdbPropertiesExpiryMs
+    this._rocksdbProperties = null
+    this._rocksdbPropertiesTime = 0
+    this._rocksdbPropertiesPending = null
     this._globalCache = null
 
     this.persistedStats = initPersistedStats()
@@ -221,6 +240,43 @@ class HypercoreStats extends EventEmitter {
       } catch {}
     }
     return 0
+  }
+
+  // { corestore: hypercore data, app: default column family }, cached, concurrent calls share one read
+  async getRocksdbProperties() {
+    if (
+      this._rocksdbProperties &&
+      this._rocksdbPropertiesTime + this.rocksdbPropertiesExpiryMs > Date.now()
+    ) {
+      return this._rocksdbProperties
+    }
+
+    if (!this._rocksdbPropertiesPending) {
+      this._rocksdbPropertiesPending = this._readRocksdbProperties().finally(() => {
+        this._rocksdbPropertiesPending = null
+      })
+    }
+
+    this._rocksdbProperties = await this._rocksdbPropertiesPending
+    this._rocksdbPropertiesTime = Date.now()
+    return this._rocksdbProperties
+  }
+
+  async _readRocksdbProperties() {
+    const storage = this.store?.storage
+    const dbs = { corestore: storage?.db, app: storage?.rocks }
+
+    const result = {}
+    for (const [data, db] of Object.entries(dbs)) {
+      if (!db) continue
+      result[data] = {}
+      for (const name of ROCKSDB_PROPERTIES) {
+        try {
+          result[data][name] = Number(await db.getProperty('rocksdb.' + name))
+        } catch {}
+      }
+    }
+    return result
   }
 
   // Caches the result for this._lastStatsCalcTime ms
@@ -563,6 +619,21 @@ class HypercoreStats extends EventEmitter {
         this.set(await self.getFilesystemAvailBytes())
       }
     })
+
+    for (const property of ROCKSDB_PROPERTIES) {
+      new promClient.Gauge({
+        // eslint-disable-line no-new
+        name: 'rocksdb_property_' + property.replace(/-/g, '_'),
+        help: `RocksDB property rocksdb.${property} (data=corestore: hypercore data, data=app: default column family)`,
+        labelNames: ['data'],
+        async collect() {
+          const properties = await self.getRocksdbProperties()
+          for (const [data, values] of Object.entries(properties)) {
+            if (values[property] !== undefined) this.set({ data }, values[property])
+          }
+        }
+      })
+    }
   }
 
   static fromCorestore(store) {
