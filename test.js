@@ -272,11 +272,11 @@ test('Expected amount of stats + consistent between prometheus, json and str', a
   const nrJsonMetrics = [...Object.keys(stats.toJson())].length
   const nrTxtMetrics = stats.toString().split('\n').length - 1
 
-  t.is(nrPromMetrics, 30, 'expected amount of stats')
-  // the filesystem stats are async and are only in prometheus stats
+  t.is(nrPromMetrics, 40, 'expected amount of stats')
+  // the filesystem (2) and rocksdb (10) stats are async and are only in prometheus stats
   // this is temporal, until either this module is rewritten or filesystem stats
   // are moved from here to machine level stats
-  t.is(nrPromMetrics - 2, nrJsonMetrics, 'consistent amount of prometheus and json metrics')
+  t.is(nrPromMetrics - 12, nrJsonMetrics, 'consistent amount of prometheus and json metrics')
   t.is(nrTxtMetrics, nrJsonMetrics, 'consistent amount of txt and json metrics')
 })
 
@@ -356,7 +356,6 @@ test('filesystem stats available without open cores when store passed', async (t
 })
 
 test('filesystem stats use the rocks dir when corestore created with a rocks instance', async (t) => {
-  // Same setup as blind-peer: new Corestore(new RocksDB(storage))
   const dir = await getTmp(t)
   const store = new Corestore(new RocksDB(dir))
   await store.ready()
@@ -382,6 +381,65 @@ test('filesystem stats use the rocks dir when corestore created with a rocks ins
     getMetricValue(lines, 'hypercore_filesystem_avail_bytes') > 0,
     'hypercore_filesystem_avail_bytes'
   )
+})
+
+test('rocksdb properties', async (t) => {
+  const rocks = new RocksDB(await getTmp(t))
+  const store = new Corestore(rocks)
+  const core = store.get({ name: 'core' })
+  await core.ready()
+
+  const stats = new HypercoreStats({ store, rocksdbPropertiesExpiryMs: 0 })
+  stats.registerPrometheusMetrics(promClient)
+  t.teardown(async () => {
+    promClient.register.clear()
+    await store.close()
+  })
+
+  for (let i = 0; i < 10; i++) await core.append(Buffer.alloc(8192, i)) // >= 4KB: blob files
+  await store.storage.db.flush()
+
+  await rocks.put('app-key', 'app-value') // default column family
+  await rocks.flush()
+
+  const props = await stats.getRocksdbProperties()
+  t.ok(props.corestore['live-blob-file-size'] >= 10 * 8192, 'blocks land in blob files')
+  t.ok(props.corestore['live-sst-files-size'] > 0, 'sst files')
+  t.is(props.corestore['live-blob-file-garbage-size'], 0, 'no garbage yet')
+  t.ok(props.app['live-sst-files-size'] > 0, 'app data in its own sst files')
+  t.is(props.app['estimate-num-keys'], 1, 'app has the 1 key')
+  t.is(props.app['live-blob-file-size'], 0, 'app (default column family) has no blob files')
+
+  const metrics = await promClient.register.metrics()
+  const lines = metrics.split('\n')
+  t.ok(
+    getMetricValue(lines, 'rocksdb_property_live_blob_file_size{data="corestore"}') >= 10 * 8192,
+    'rocksdb_property_live_blob_file_size corestore'
+  )
+  t.ok(
+    getMetricValue(lines, 'rocksdb_property_estimate_num_keys{data="app"}') === 1,
+    'rocksdb_property_estimate_num_keys app'
+  )
+})
+
+test('rocksdb properties are cached', async (t) => {
+  const store = new Corestore(await getTmp(t))
+  const core = store.get({ name: 'core' })
+  await core.ready()
+  t.teardown(() => store.close())
+
+  const stats = new HypercoreStats({ store, rocksdbPropertiesExpiryMs: 1000 })
+  const before = await stats.getRocksdbProperties()
+
+  for (let i = 0; i < 10; i++) await core.append(Buffer.alloc(8192, i))
+  await store.storage.db.flush()
+
+  t.is(await stats.getRocksdbProperties(), before, 'served from cache')
+
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+  const after = await stats.getRocksdbProperties()
+  t.not(after, before, 'refreshed after expiry')
+  t.ok(after.corestore['live-blob-file-size'] > before.corestore['live-blob-file-size'])
 })
 
 test('gc core if removed from corestore', async (t) => {
